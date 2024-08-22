@@ -1,0 +1,7 @@
+{
+  "schemaType": "LAUNCHER",
+  "id": "aqm-launcher",
+  "displayName": "Alert Quality Management",
+  "description": "Provides insight into improving alert landscape within New Relic",
+  "rootNerdletId": "aqm-nerdlet"
+}

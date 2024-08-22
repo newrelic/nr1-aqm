@@ -1,0 +1,24 @@
+{
+    "private": true,
+    "name": "nr1-aqm",
+    "version": "1.0.0",
+    "scripts": {
+        "start": "nr1 nerdpack:serve",
+        "test": "exit 0"
+    },
+    "nr1": {
+        "uuid": "3cc7c07c-77a7-4049-9ec6-533f349d2f22"
+    },
+    "dependencies": {
+        "async": "^3.2.5",
+        "prop-types": "15.7.2",
+        "react": "17.0.2",
+        "react-dom": "17.0.2",
+        "semantic-ui-react": "^2.1.5"
+    },
+    "browserslist": [
+        "last 2 versions",
+        "not ie < 11",
+        "not dead"
+    ]
+}

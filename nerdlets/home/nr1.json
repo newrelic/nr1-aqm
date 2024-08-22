@@ -1,0 +1,6 @@
+{
+  "schemaType": "NERDLET",
+  "id": "aqm-nerdlet",
+  "displayName": "Alert Quality Management",
+  "description": "Provides insight into improving alert landscape within New Relic"
+}
