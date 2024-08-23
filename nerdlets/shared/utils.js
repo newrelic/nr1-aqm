@@ -24,6 +24,69 @@ export const getConditionTimeline = async (account, conditionId, timeClause) => 
 
 }
 
+export const getEntities = async (account, cursor) => { //TODO: add relatedEntities call once entity-condition relationships exist (to fetch all entities + alert coverage -- # of conditions targeting entities + what specific conditions)
+  let gql = ``;
+  if (cursor == null) {
+    gql = `
+    {
+      actor {
+        entitySearch(query: "accountId = ${account.accountId} and reporting='true' and type not in ('DASHBOARD', 'WORKFLOW', 'CONDITION', 'DESTINATION', 'SECURE_CRED', 'ENDPOINT', 'ISSUE', 'POLICY', 'MONITOR_DOWNTIME', 'KEY_TRANSACTION', 'AWSLAMBDAREGION', 'AWSUSAGE', 'PRIVATE_LOCATION', 'CONTAINER')") {
+          results {
+            entities {
+              type
+              name
+              guid
+              alertSeverity
+              accountId
+            }
+            nextCursor
+          }
+        }
+      }
+    }
+    `;
+  } else {
+    gql = `
+    {
+      actor {
+        entitySearch(query: "accountId = ${account.accountId} and reporting='true' and type not in ('DASHBOARD', 'WORKFLOW', 'CONDITION', 'DESTINATION', 'SECURE_CRED', 'ENDPOINT', 'ISSUE', 'POLICY', 'MONITOR_DOWNTIME', 'KEY_TRANSACTION', 'AWSLAMBDAREGION', 'AWSUSAGE', 'PRIVATE_LOCATION', 'CONTAINER')") {
+          results(cursor: "${cursor}") {
+            entities {
+              type
+              name
+              guid
+              alertSeverity
+              accountId
+            }
+            nextCursor
+          }
+        }
+      }
+    }
+    `;
+  }
+
+  const data = await NerdGraphQuery.query({
+    query: gql
+  });
+
+  if (data.error) {
+    console.debug(`Error fetching entities`);
+    console.debug(data.error);
+    return null;
+  }
+
+  let result = data?.data?.actor?.entitySearch?.results?.entities;
+  let nextCursor = data?.data?.actor?.entitySearch?.results?.nextCursor;
+
+  if (nextCursor == null) {
+    return result;
+  } else {
+    const nextResult = await getEntities(account, nextCursor);
+    return result.concat(nextResult);
+  }
+}
+
 export const getPolicies = async (account, cursor) => {
   let gql = ``;
   if (cursor == null) {
@@ -203,6 +266,9 @@ export const getTooltip = (context) => {
       break;
     case 'cond_audit':
       text = 'A list of any changes made to the condition over the time period selected.';
+      break;
+    case 'entity_coverage':
+      text = 'The percentage of entities that do not have alert conditions attached.';
       break;
   }
   return text;
