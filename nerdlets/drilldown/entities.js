@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { navigation, Table, TableHeader, TableHeaderCell, TableRow, TableRowCell, TextField } from 'nr1';
 
 //TODO:
-//Switch to entity-condition relationships via relatedEntities once available
+//Switch to entity-condition relationships via relatedEntities once available.
 
 const Entities = ({selectedAccount, entities}) => {
   const [searchText, setSearchText] = useState('');
