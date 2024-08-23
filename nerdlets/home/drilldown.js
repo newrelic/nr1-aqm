@@ -1,12 +1,13 @@
 import React from 'react';
 import { PlatformStateContext, Spinner, Tooltip } from 'nr1';
 import { Card, Icon, Statistic, Tab } from 'semantic-ui-react';
-import { getCardColor, getDestinations, getDestinationRelationships, getIncidents, getIssues, getNotifications, getPolicies, getTooltip, getWorkflows } from '../shared/utils';
+import { getCardColor, getDestinations, getDestinationRelationships, getEntities, getIncidents, getIssues, getNotifications, getPolicies, getTooltip, getWorkflows } from '../shared/utils';
 import Workflows from '../drilldown/workflows';
 import Destinations from '../drilldown/destinations';
 import Notifications from '../drilldown/notifications';
 import Incidents from '../drilldown/incidents';
 import ConditionHistory from '../drilldown/conditions';
+import Entities from '../drilldown/entities';
 import async from 'async';
 
 export default class Drilldown extends React.Component {
@@ -37,6 +38,7 @@ export default class Drilldown extends React.Component {
 
     //let allData = await Promise.all([this.fetchWorkflows(), this.fetchDestinations(),this.fetchNotificationsAndIssues(), this.fetchIncidents()]);
     const p = await this.fetchPolicies();
+    const e = await this.fetchEntities();
 
     this.setState({
       workflows: w,
@@ -44,6 +46,7 @@ export default class Drilldown extends React.Component {
       issues: n,
       incidents: i,
       policies: p,
+      entities: e,
       loading: false
     });
   }
@@ -75,6 +78,23 @@ export default class Drilldown extends React.Component {
       return dayChunks;
     } else {
       return `SINCE ${timeRange.duration / 60000} minutes ago`; // if you have > 10k notifications in 1 day within a given account, do better.
+    }
+  }
+
+  async fetchEntities() {
+    const { account } = this.props;
+    const data = await getEntities(account, null);
+
+    if (data == null) {
+      return null;
+    } else {
+      const noAlerts = data.filter(e => {
+        return e.alertSeverity == 'NOT_CONFIGURED';
+      });
+
+      const percentMissingAlerts = (noAlerts.length / data.length)*100
+
+      return {'allEntities': data, 'noAlerts': noAlerts, 'percentMissing': percentMissingAlerts.toFixed(2)};
     }
   }
 
@@ -262,10 +282,10 @@ export default class Drilldown extends React.Component {
   }
 
   renderOverview() {
-    const { workflows, destinations, issues, incidents } = this.state;
+    const { workflows, destinations, entities, issues, incidents } = this.state;
     return (
       <div id="drilldown">
-        <Card.Group style={{textAlign: 'center'}} id="card-group" itemsPerRow={5}>
+        <Card.Group style={{textAlign: 'center'}} id="card-group" itemsPerRow={6}>
           <Card color={getCardColor(Number(incidents.under5Summary))} onClick={() => this.setState({selectedCard: 'flapping_incidents'})}>
             <Card.Header>
               <h3>
@@ -356,6 +376,24 @@ export default class Drilldown extends React.Component {
               </Statistic>
             </Card.Content>
           </Card>
+          <Card color={getCardColor(Number(entities.percentMissing))} onClick={() => this.setState({selectedCard: 'entity_coverage'})}>
+            <Card.Header>
+              <h3>
+              <Tooltip
+                text={getTooltip('entity_coverage')}
+                placementType={Tooltip.PLACEMENT_TYPE.RIGHT}
+              >
+              <Icon name="help circle" />
+              </Tooltip>
+              Non-Covered Entities
+              </h3>
+            </Card.Header>
+            <Card.Content>
+              <Statistic color={getCardColor(Number(entities.percentMissing))} size="small">
+                <Statistic.Value>{Number(entities.percentMissing)}%</Statistic.Value>
+              </Statistic>
+            </Card.Content>
+          </Card>
         </Card.Group>
       </div>
     );
@@ -382,7 +420,7 @@ export default class Drilldown extends React.Component {
 
 
   renderCardDrilldown() {
-    const { workflows, destinations, issues, incidents, selectedCard } = this.state;
+    const { workflows, destinations, entities, issues, incidents, selectedCard } = this.state;
     const { account, timeRange } = this.props;
 
     switch (selectedCard) {
@@ -404,12 +442,15 @@ export default class Drilldown extends React.Component {
       case 'overlap_workflows':
         return <Workflows selectedAccount={account} workflows={workflows}/>;
         break;
+      case 'entity_coverage':
+        return <Entities selectedAccount={account} entities={entities}/>;
+        break;
     }
 
   }
 
   render() {
-    const { loading, workflows, destinations, issues, incidents, policies, selectedCard} = this.state;
+    const { loading, policies, selectedCard} = this.state;
 
     const panes = [
       {

@@ -37,11 +37,6 @@ const Destinations = ({selectedAccount, destinations}) => {
         <Table items={filtered}>
           <TableHeader>
             <TableHeaderCell
-            value={({ item }) => item.destinationId}
-            >
-            <b>ID</b>
-            </TableHeaderCell>
-            <TableHeaderCell
             value={({ item }) => item.name}
             >
             <b>Name</b>
@@ -54,7 +49,6 @@ const Destinations = ({selectedAccount, destinations}) => {
           </TableHeader>
           {({ item }) => (
             <TableRow onClick={() => openDestinationEdit(item.destinationId, item.destinationType)}>
-              <TableRowCell>{item.destinationId}</TableRowCell>
               <TableRowCell>{item.name}</TableRowCell>
               <TableRowCell>{item.destinationType}</TableRowCell>
             </TableRow>
