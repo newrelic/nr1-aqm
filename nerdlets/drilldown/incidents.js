@@ -1,44 +1,67 @@
-import React, { useMemo, useState } from 'react';
-import { navigation, Table, TableHeader, TableHeaderCell, TableRow, TableRowCell, TextField } from 'nr1';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { getIncidents, getCardColor, getTooltip } from '../shared/utils';
+import ExportButton from '../shared/export';
+import { Card, Icon, Statistic } from 'semantic-ui-react';
+import { navigation, PlatformStateContext, Spinner, Table, TableHeader, TableHeaderCell, TableRow, TableRowCell, TextField, Tooltip } from 'nr1';
 
-const Incidents = ({selectedAccount, timeRange, incidents, selectedCard}) => {
+const openQWindow = (type, policy, condition, timeRange, selectedAccount) => {
+  const timeClause = `SINCE ${timeRange.duration / 60000} minutes ago`;
+  let q = ``;
+
+  if (type == 'short') {
+    q = `FROM NrAiIncident SELECT count(*) where event = 'close' and durationSeconds <= 300 and policyName = '${policy}' and conditionName = '${condition}' ${timeClause} TIMESERIES MAX`;
+  } else {
+    q = `FROM NrAiIncident SELECT count(*) where event = 'close' and durationSeconds >= 86400 and policyName = '${policy}' and conditionName = '${condition}' ${timeClause} TIMESERIES MAX`;
+  }
+
+  const qBuilder = {
+    id: 'data-exploration.query-builder',
+    urlState: {
+      initialActiveInterface: 'nrqlEditor',
+      initialAccountId: selectedAccount.accountId,
+      initialNrqlValue: q,
+      initialWidget: {
+        visualization: {
+          'id': 'viz.line'
+        }
+      },
+      isViewingQuery: true
+    }
+  }
+
+  navigation.openStackedNerdlet(qBuilder);
+};
+
+const Incidents = ({ selectedAccount }) => {
+  const { timeRange } = useContext(PlatformStateContext);
+  const [incidents, setIncidents] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
+  const [selectedCard, setSelectedCard] = useState('short_incidents');
 
-  const openQWindow = (type, policy, condition) => {
-    const timeClause = `SINCE ${timeRange.duration / 60000} minutes ago`;
-    let q = ``;
+  useEffect(() => {
+    const fetchAndSetIncidents = async () => {
+      setLoading(true);
+      let start = new Date(Date.now());
 
-    if (type == 'flapping') {
-      q = `FROM NrAiIncident SELECT count(*) where event = 'close' and durationSeconds <= 300 and policyName = '${policy}' and conditionName = '${condition}' ${timeClause} TIMESERIES MAX`;
-    } else {
-      q = `FROM NrAiIncident SELECT count(*) where event = 'close' and durationSeconds >= 86400 and policyName = '${policy}' and conditionName = '${condition}' ${timeClause} TIMESERIES MAX`;
+      const timeClause = `SINCE ${timeRange.duration / 60000} minutes ago`;
+      const data = await getIncidents(selectedAccount, timeClause);
+
+      setIncidents(data);
+      setLoading(false);
     }
 
-    const qBuilder = {
-      id: 'data-exploration.query-builder',
-      urlState: {
-        initialActiveInterface: 'nrqlEditor',
-        initialAccountId: selectedAccount.accountId,
-        initialNrqlValue: q,
-        initialWidget: {
-          visualization: {
-            'id': 'viz.line'
-          }
-        },
-        isViewingQuery: true
-      }
-    }
+    fetchAndSetIncidents();
+  }, [selectedAccount, timeRange]);
 
-    navigation.openStackedNerdlet(qBuilder);
-  };
-
-  const renderFlappingIncidents = () => {
+  const renderShortIncidents = useMemo(() => {
     if (incidents?.under5Drilldown?.length > 0 && Number(incidents.under5Summary) > 0) {
 
       const filtered = incidents.under5Drilldown.filter(i => {
         return (
-          i.facet[0].toLowerCase().includes(searchText.toLowerCase()) ||
-          i.facet[1].toLowerCase().includes(searchText.toLowerCase())
+          i.percentUnder5 > 0 &&
+          (i.facet[0].toLowerCase().includes(searchText.toLowerCase()) ||
+          i.facet[1].toLowerCase().includes(searchText.toLowerCase()))
         );
       });
 
@@ -50,6 +73,12 @@ const Incidents = ({selectedAccount, timeRange, incidents, selectedCard}) => {
             type={TextField.TYPE.SEARCH}
             onChange={e => setSearchText(e.target.value)}
             style={{marginTop: '20px'}}
+          />
+          <ExportButton
+            data={filtered}
+            type='short_incidents'
+            filename={`short_incidents.csv`}
+            displayText='Export'
           />
           <Table items={filtered}>
             <TableHeader>
@@ -66,14 +95,14 @@ const Incidents = ({selectedAccount, timeRange, incidents, selectedCard}) => {
               <TableHeaderCell
               value={({ item }) => item.percentUnder5}
               >
-              <b>Flapping Incident %</b>
+              <b>Short Lived Incident %</b>
               </TableHeaderCell>
             </TableHeader>
             {({ item }) => (
-              <TableRow onClick={() => openQWindow('flapping', item.facet[0], item.facet[1])}>
+              <TableRow onClick={() => openQWindow('short', item.facet[0], item.facet[1], timeRange, selectedAccount)}>
                 <TableRowCell>{item.facet[0]}</TableRowCell>
                 <TableRowCell>{item.facet[1]}</TableRowCell>
-                <TableRowCell>{item.percentUnder5.toFixed(2)}%</TableRowCell>
+                <TableRowCell style={{color: getCardColor(Number(item.percentUnder5), null)}}>{item.percentUnder5.toFixed(2)}%</TableRowCell>
               </TableRow>
             )}
           </Table>
@@ -81,16 +110,17 @@ const Incidents = ({selectedAccount, timeRange, incidents, selectedCard}) => {
       )
     }
 
-    return <h2>No Flapping Incidents!</h2>
-  }
+    return <h2>No Short Lived Incidents!</h2>
+  }, [incidents, selectedCard, searchText]);
 
-  const renderLongIncidents = () => {
+  const renderLongIncidents = useMemo(() => {
     if (incidents?.over1Drilldown?.length > 0 && Number(incidents.over1Summary) > 0) {
 
       const filtered = incidents.over1Drilldown.filter(i => {
         return (
-          i.facet[0].toLowerCase().includes(searchText.toLowerCase()) ||
-          i.facet[1].toLowerCase().includes(searchText.toLowerCase())
+          i.percentOverADay > 0 &&
+          (i.facet[0].toLowerCase().includes(searchText.toLowerCase()) ||
+          i.facet[1].toLowerCase().includes(searchText.toLowerCase()))
         );
       });
       return (
@@ -101,6 +131,12 @@ const Incidents = ({selectedAccount, timeRange, incidents, selectedCard}) => {
           type={TextField.TYPE.SEARCH}
           onChange={e => setSearchText(e.target.value)}
           style={{marginTop: '20px'}}
+        />
+        <ExportButton
+          data={filtered}
+          type='long_incidents'
+          filename={`long_incidents.csv`}
+          displayText='Export'
         />
         <Table items={filtered}>
           <TableHeader>
@@ -121,10 +157,10 @@ const Incidents = ({selectedAccount, timeRange, incidents, selectedCard}) => {
             </TableHeaderCell>
           </TableHeader>
           {({ item }) => (
-            <TableRow onClick={() => openQWindow('long', item.facet[0], item.facet[1])}>
+            <TableRow onClick={() => openQWindow('long', item.facet[0], item.facet[1], timeRange, selectedAccount)}>
               <TableRowCell>{item.facet[0]}</TableRowCell>
               <TableRowCell>{item.facet[1]}</TableRowCell>
-              <TableRowCell>{item.percentOverADay.toFixed(2)}%</TableRowCell>
+              <TableRowCell style={{color: getCardColor(Number(item.percentOverADay), null)}}>{item.percentOverADay.toFixed(2)}%</TableRowCell>
             </TableRow>
           )}
         </Table>
@@ -133,22 +169,65 @@ const Incidents = ({selectedAccount, timeRange, incidents, selectedCard}) => {
     }
 
     return <h2>No Long Running Incidents!</h2>
+  }, [incidents, selectedCard, searchText]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center'}}>
+        <h3>Loading</h3>
+        <Spinner type={Spinner.TYPE.DOT}/>
+      </div>
+    );
   }
 
-  if (incidents !== null && incidents !== undefined) {
-    return useMemo(() => {
+  if (incidents !== null && incidents !== undefined && !loading) {
       return (
-        <div>
-          {selectedCard == 'flapping_incidents'
-          ?
-          renderFlappingIncidents()
-          :
-          renderLongIncidents()
-          }
+        <div id="drilldown">
+        <Card.Group style={{textAlign: 'center'}} id="card-group" itemsPerRow={2}>
+        <Card color={getCardColor(Number(incidents.under5Summary), null)} onClick={() => setSelectedCard('short_incidents')}>
+          <Card.Header>
+            <h3>
+            <Tooltip
+              text={getTooltip('short_incidents')}
+              placementType={Tooltip.PLACEMENT_TYPE.RIGHT}
+            >
+            <Icon name="help circle" />
+            </Tooltip>
+            Short Lived Incidents
+            </h3>
+          </Card.Header>
+          <Card.Content>
+            <Statistic color={getCardColor(Number(incidents.under5Summary), null)}>
+              <Statistic.Value>{incidents.under5Summary == undefined ? 0 : Number(incidents.under5Summary)}%</Statistic.Value>
+            </Statistic>
+          </Card.Content>
+        </Card>
+        <Card color={getCardColor(Number(incidents.over1Summary), null)} onClick={() => setSelectedCard('long_incidents')}>
+          <Card.Header>
+            <h3>
+            <Tooltip
+              text={getTooltip('long_incidents')}
+              placementType={Tooltip.PLACEMENT_TYPE.RIGHT}
+            >
+            <Icon name="help circle" />
+            </Tooltip>
+            Long Running Incidents
+            </h3>
+          </Card.Header>
+          <Card.Content>
+            <Statistic color={getCardColor(Number(incidents.over1Summary), null)}>
+              <Statistic.Value>{incidents.over1Summary == undefined ? 0 : Number(incidents.over1Summary)}%</Statistic.Value>
+            </Statistic>
+          </Card.Content>
+        </Card>
+        </Card.Group>
+        {selectedCard == 'short_incidents' ? renderShortIncidents : ''}
+        {selectedCard == 'long_incidents' ? renderLongIncidents : ''}
         </div>
       )
-    }, [incidents, selectedCard, searchText]);
   }
+
+  return <h2>No incidents returned</h2>
 };
 
 export default Incidents;

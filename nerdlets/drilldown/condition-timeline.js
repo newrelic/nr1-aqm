@@ -11,16 +11,16 @@ const ConditionTimeline = ({timeline, timeRange}) => {
     let type = null;
     let endCopy = end;
 
-    //1 day or less
+    // 1 day or less
     if (timeRange?.duration <= 86400000) {
       type = 'hour';
-      chunk = 120*60*1000; //2 hour chunks
+      chunk = 120*60*1000; // 2 hour chunks
     } else if (timeRange?.duration > 86400000 && timeRange?.duration <= 1209600000) {
       type='day';
-      chunk = 1000*60*60*24; //1 day chunks
+      chunk = 1000*60*60*24; // 1 day chunks
     } else {
       type='week';
-      chunk = 1000*60*60*24*7 //1 week chunks
+      chunk = 1000*60*60*24*7 // 1 week chunks
     }
 
     for (let t=start.getTime(); t<end.getTime(); t+=chunk) {
@@ -33,7 +33,6 @@ const ConditionTimeline = ({timeline, timeRange}) => {
       }
     }
 
-    //now
     if (format == 'unix') {
       allChunks.push(endCopy.getTime());
     } else {
@@ -92,14 +91,10 @@ const ConditionTimeline = ({timeline, timeRange}) => {
     }
 
     return xPos;
-
-    //return Math.min(Math.max(((ts - start.getTime()) / (end.getTime() - start.getTime()))*100 + OFFSET, 1), 98); //old logic
-
   }
 
   const renderMarker = (type, timestamp) => {
     let position = calculateXPosition(timestamp);
-    //let boundPosition = Math.min(Math.max(position, 1), 98);
     let style = '';
     let width = '1px';
 
@@ -110,8 +105,6 @@ const ConditionTimeline = ({timeline, timeRange}) => {
     } else {
       width = '0.5px';
     }
-
-    //background: repeating-linear-gradient(45deg, rgba(128,128,128,0.5), rgba(128, 128, 128, 0.5) 2px, black 2px, black 4px)
 
     switch(type) {
       case 'critical':
@@ -152,7 +145,7 @@ const ConditionTimeline = ({timeline, timeRange}) => {
 
   }
 
-  const renderTimeChunks = () => { //manually clamping the `left` value for start/end, so space the rest evenly around those
+  const renderTimeChunks = () => {
     const timeChunks = generateTimeChunks();
 
     if (timeChunks?.length > 0) {

@@ -1,4 +1,18 @@
 import { NerdGraphQuery } from 'nr1';
+import { EXCLUDED_ENTITY_TYPES } from './constants';
+
+export const chunkData = (d, size) => {
+  return new Promise((resolve, reject) => {
+    let chunked = d.reduceRight((r,i,_,s) => (r.push(s.splice(0,size)),r),[]);
+    resolve(chunked)
+  })
+};
+
+export const pluckTagValue = (tags, keyToPluck) => {
+  let result = tags.find(t => t.key === keyToPluck);
+  return result ? result.values[0] : null;
+};
+
 
 export const getConditionTimeline = async (account, conditionId, timeClause) => {
   let critical = `FROM NrAiIncident SELECT uniques(timestamp, 3000) as 'critical_times' where event = 'open' and priority = 'critical' and conditionId = ${conditionId} ${timeClause}`;
@@ -26,11 +40,14 @@ export const getConditionTimeline = async (account, conditionId, timeClause) => 
 
 export const getEntities = async (account, cursor) => { //TODO: add relatedEntities call once entity-condition relationships exist (to fetch all entities + alert coverage -- # of conditions targeting entities + what specific conditions)
   let gql = ``;
+
+  const entityFilter = EXCLUDED_ENTITY_TYPES.map(e => `'${e}'`).join(',');
+
   if (cursor == null) {
     gql = `
     {
       actor {
-        entitySearch(query: "accountId = ${account.accountId} and reporting='true' and type not in ('DASHBOARD', 'WORKFLOW', 'CONDITION', 'DESTINATION', 'SECURE_CRED', 'ENDPOINT', 'ISSUE', 'POLICY', 'MONITOR_DOWNTIME', 'KEY_TRANSACTION', 'AWSLAMBDAREGION', 'AWSUSAGE', 'PRIVATE_LOCATION', 'CONTAINER')") {
+        entitySearch(query: "accountId = ${account.accountId} and reporting is true and type not in (${entityFilter})") {
           results {
             entities {
               type
@@ -38,6 +55,7 @@ export const getEntities = async (account, cursor) => { //TODO: add relatedEntit
               guid
               alertSeverity
               accountId
+              reporting
             }
             nextCursor
           }
@@ -49,7 +67,7 @@ export const getEntities = async (account, cursor) => { //TODO: add relatedEntit
     gql = `
     {
       actor {
-        entitySearch(query: "accountId = ${account.accountId} and reporting='true' and type not in ('DASHBOARD', 'WORKFLOW', 'CONDITION', 'DESTINATION', 'SECURE_CRED', 'ENDPOINT', 'ISSUE', 'POLICY', 'MONITOR_DOWNTIME', 'KEY_TRANSACTION', 'AWSLAMBDAREGION', 'AWSUSAGE', 'PRIVATE_LOCATION', 'CONTAINER')") {
+        entitySearch(query: "accountId = ${account.accountId} and reporting is true and type not in (${entityFilter})") {
           results(cursor: "${cursor}") {
             entities {
               type
@@ -57,6 +75,7 @@ export const getEntities = async (account, cursor) => { //TODO: add relatedEntit
               guid
               alertSeverity
               accountId
+              reporting
             }
             nextCursor
           }
@@ -220,16 +239,26 @@ export const getConditions = async (account, policy, cursor) => {
   }
 }
 
-export const getCardColor = (cardValue) => {
+export const getCardColor = (cardValue, type) => {
   if (cardValue < 25 || isNaN(cardValue) || cardValue == undefined) {
+    if (type === 'progress') {
+      return 'success';
+    }
+
     return 'green';
   }
 
   if (cardValue >= 25 && cardValue < 50) {
+    if (type === 'progress') {
+      return 'warning';
+    }
     return 'orange';
   }
 
   if (cardValue >= 50) {
+    if (type === 'progress') {
+      return 'error';
+    }
     return 'red';
   }
 }
@@ -237,11 +266,11 @@ export const getCardColor = (cardValue) => {
 export const getTooltip = (context) => {
   let text = '';
   switch (context) {
-    case 'flapping_incidents':
-      text = 'The percentage of incidents that are open for less than 5 minutes.';
+    case 'short_incidents':
+      text = 'The percentage of incidents that are open for less than 5 minutes, across all conditions.';
       break;
     case 'long_incidents':
-      text = 'The percentage of incidents that are open for longer than 1 day.';
+      text = 'The percentage of incidents that are open for longer than 1 day, across all conditions.';
       break;
     case 'unsent_issues':
       text = 'The percentage of issues that did not route to any destinations (no notifications sent).';
@@ -268,7 +297,7 @@ export const getTooltip = (context) => {
       text = 'A list of any changes made to the condition over the time period selected.';
       break;
     case 'entity_coverage':
-      text = 'The percentage of entities that do not have alert conditions attached.';
+      text = 'The bar below represents the percentage of entities with no alert conditions attached.';
       break;
   }
   return text;
@@ -293,6 +322,23 @@ export const getAlertCounts = async (timeClause, account) => {
     const counts = {'accountId': account.id, 'accountName': account.name, 'notificationCount': result?.notificationCount?.results[0]?.count, 'issueCount': result?.issueCount?.results[0]?.issueCount }
     return counts;
 };
+
+export const generateDayChunks = (timeRange, startTime) => { //returns 1 day chunks to use in nrql since-until clauses for fetching issues over > 1 day period (more accurate)
+    const ONE_DAY_MS = 86400000;
+    let currentStartTime = startTime - timeRange.duration;
+    let dayChunks = [];
+
+    if (timeRange.duration > 86400000) {
+      for (let i=0; i<timeRange.duration; i += ONE_DAY_MS) {
+        let currentEndTime = currentStartTime + ONE_DAY_MS;
+        dayChunks.push({since: currentStartTime, until: currentEndTime});
+        currentStartTime = currentEndTime;
+      }
+      return dayChunks;
+    } else {
+      return `SINCE ${timeRange.duration / 60000} minutes ago`; // if you have > 10k notifications in 1 day within a given account, do better.
+    }
+}
 
 export const getWorkflows = async (account, cursor) => {
   let gql = ``;
@@ -555,77 +601,39 @@ export const getNotifications = async (account, sinceClause) => {
 //   return final;
 // }
 
-export const getIssues = async (account, cursor, timeWindow) => { //GraphQL pagination is very slow over long time ranges // NRQL times out at long time ranges with uniques()-facet combos + wouldn't be fully accurate
+export const getIssues = async (account, cursor, timeWindow) => { //TODO: product to fix api behavior
   let gql = ``;
   if (cursor == null) {
-    // gql = `
-    // {
-    //   actor {
-    //     entitySearch(query: "type='ISSUE' and tags.accountId=${account.accountId}") {
-    //       results {
-    //         entities {
-    //           name
-    //           tags {
-    //             key
-    //             values
-    //           }
-    //         }
-    //         nextCursor
-    //       }
-    //     }
-    //   }
-    // }
-    // `;
-
     gql = `
     {
-      actor {
-        account(id: ${account.accountId}) {
-          aiIssues {
-            issues(filter: {states: [ACTIVATED]}
+    actor {
+      account(id: ${account.accountId}) {
+        aiIssues {
+          issues(
             timeWindow: {endTime: ${timeWindow.end}, startTime: ${timeWindow.start}}
-            ) {
-              issues {
-                conditionName
-                issueId
-                policyName
-                title
-                activatedAt
-                closedAt
-                eventType
-              }
-              nextCursor
+          ) {
+            issues {
+              conditionName
+              issueId
+              policyName
+              title
+              activatedAt
+              closedAt
+              eventType
             }
+            nextCursor
           }
         }
       }
     }
-    `;
+  }`
   } else {
-    // gql = `
-    // {
-    //   actor {
-    //     entitySearch(query: "type='ISSUE' and tags.accountId=${account.accountId}") {
-    //       results(cursor: "${cursor}") {
-    //         entities {
-    //           name
-    //           tags {
-    //             key
-    //             values
-    //           }
-    //         }
-    //         nextCursor
-    //       }
-    //     }
-    //   }
-    // }
-    // `;
     gql = `
     {
       actor {
         account(id: ${account.accountId}) {
           aiIssues {
-            issues(filter: {states: [ACTIVATED]}
+            issues(
               cursor: "${cursor}"
               timeWindow: {endTime: ${timeWindow.end}, startTime: ${timeWindow.start}}
             ) {
@@ -657,8 +665,6 @@ export const getIssues = async (account, cursor, timeWindow) => { //GraphQL pagi
     console.debug(data.error);
     return null;
   }
-  // let result = data?.data?.actor?.entitySearch?.results?.entities;
-  // let nextCursor = data?.data?.actor?.entitySearch?.results?.nextCursor;
   let result = data?.data?.actor?.account?.aiIssues?.issues?.issues;
   let nextCursor = data?.data?.actor?.account?.aiIssues?.issues?.nextCursor;
 

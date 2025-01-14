@@ -11,7 +11,7 @@ const AqmNerdlet = () => {
     nerdlet.setConfig({
       accountPicker: false,
       timePicker: true,
-      timePickerDefaultOffset: 1000 * 60 * 60 * 24, // default last 24 hours
+      timePickerDefaultOffset: 1000 * 60 * 60 * 24,
       timePickerRanges: [
         // { label: '60 minutes', offset: 3600000 },
         // { label: '3 hours', offset: 10800000 },
@@ -28,7 +28,7 @@ const AqmNerdlet = () => {
   }, [timeRange.duration]);
 
 
-  return <OverviewPage timeRange={timeRange}/>
+  return <OverviewPage />
 
 }
 

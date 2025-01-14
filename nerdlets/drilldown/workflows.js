@@ -1,10 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { List, ListItem, navigation, Table, TableHeader, TableHeaderCell, TableRow, TableRowCell, TextField } from 'nr1';
 
-//TODO:
-//Style table like NR default component
-//implement no_channels view when sample data available or replace with something better
-
 const Workflows = ({workflows}) => {
   const [searchText, setSearchText] = useState('');
 
@@ -70,69 +66,6 @@ const Workflows = ({workflows}) => {
           </table>
         </>
       )
-
-      // return (
-      //   <>
-      //   <TextField
-      //     placeholder='Search policy/condition..'
-      //     value={searchText || ''}
-      //     type={TextField.TYPE.SEARCH}
-      //     onChange={e => setSearchText(e.target.value)}
-      //     style={{marginTop: '20px'}}
-      //   />
-      //   <Table items={filtered}>
-      //     <TableHeader>
-      //       <TableHeaderCell
-      //       value={({ item }) => item.uniqueFilter}
-      //       >
-      //       <b>Common Filter(s)</b>
-      //       </TableHeaderCell>
-      //       <TableHeaderCell
-      //       value={({ item }) => item.matchingWorkflows}
-      //       >
-      //       <b>Workflows</b>
-      //       </TableHeaderCell>
-      //     </TableHeader>
-      //     {({ item }) => (
-      //       <TableRow id="row">
-      //         <TableRowCell>
-      //           {
-      //             item?.uniqueFilter?.length > 0
-      //             ?
-      //             item.uniqueFilter.map(i => {
-      //               return (
-      //                 <>
-      //                   <b>{`${i.attribute} ${i.operator} ${i.values}`}</b>
-      //                   <br />
-      //                 </>
-      //               )
-      //             })
-      //             :
-      //             'n/a'
-      //           }
-      //         </TableRowCell>
-      //         <TableRowCell>
-      //           <List rowHeight={16}>
-      //             {
-      //               item?.matchingWorkflows?.length > 0
-      //               ?
-      //               item.matchingWorkflows.map(w => {
-      //                 return (
-      //                   <ListItem>
-      //                     <a className="u-unstyledLink cell-link">{w.name}</a>
-      //                   </ListItem>
-      //                 )
-      //               })
-      //               :
-      //               'n/a'
-      //             }
-      //           </List>
-      //         </TableRowCell>
-      //       </TableRow>
-      //     )}
-      //   </Table>
-      //   </>
-      // )
     }
 
     return <h2>No Overlapping Workflows</h2>;

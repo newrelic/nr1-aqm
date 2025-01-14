@@ -9,13 +9,14 @@ This application provides insight into alert hygiene and overall cleanliness of 
 ## Features
 * Aggregated counts of issues and notifications across many accounts
 * Drilldown KPIs, including:
-   * Flapping incidents - Incidents open for 5 min or less
-   * Long Running incidents - Incidents open greater than 1 day
+   * Short Lived Incidents - Incidents open for 5 min or less
+   * Long Running Incidents - Incidents open greater than 1 day
    * Unsent Issues (Noise) - Active issues that did not route to any destinations
    * Unused Destinations - Destinations created but not attached to any Workflows
    * Overlapping Workflows - Workflows with duplicate filters (often the cause of duplicate notifications)
    * Non-Covered Entities - Entities with no conditions targeting them (no alerts).
 * Condition History - See the history of incidents that have triggered for a given policy/condition, as well as any recent changes, signal errors, and top offending entities.
+* Exportable reports
 
 
 ## Screenshots
