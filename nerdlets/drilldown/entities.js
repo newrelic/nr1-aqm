@@ -3,17 +3,8 @@ import { getCardColor, getEntities, getTooltip } from '../shared/utils';
 import ExportButton from '../shared/export';
 import { Progress } from 'semantic-ui-react';
 import { navigation, Table, TableHeader, TableHeaderCell, TableRow, TableRowCell, TextField, Spinner } from 'nr1';
-
-<<<<<<< HEAD
-const Entities = ({selectedAccount}) => {
-  const [entities, setEntities] = useState(null);
-  const [loading, setLoading] = useState(true);
-=======
-//TODO:
-//Switch to entity-condition relationships via relatedEntities once available.
-
+  
 const Entities = ({selectedAccount, entities}) => {
->>>>>>> main
   const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
