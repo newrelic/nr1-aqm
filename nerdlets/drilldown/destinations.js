@@ -1,25 +1,21 @@
 import React, { useMemo, useState } from 'react';
 import { navigation, Table, TableHeader, TableHeaderCell, TableRow, TableRowCell, TextField } from 'nr1';
 
-//TODO:
-//Export button?
-//Remove duplicates button (if API ever becomes available)
+const openDestinationEdit = (selectedAccount, destinationId, destinationType) => {
+  const destinationEdit = {
+    id: 'notify.edit-destination',
+    urlState: {
+      accountId: selectedAccount.accountId,
+      destinationId: destinationId,
+      destinationType: destinationType
+    }
+  }
+
+  navigation.openStackedNerdlet(destinationEdit);
+};
 
 const Destinations = ({selectedAccount, destinations}) => {
   const [searchText, setSearchText] = useState('');
-
-  const openDestinationEdit = (destinationId, destinationType) => {
-    const destinationEdit = {
-      id: 'notify.edit-destination',
-      urlState: {
-        accountId: selectedAccount.accountId,
-        destinationId: destinationId,
-        destinationType: destinationType
-      }
-    }
-
-    navigation.openStackedNerdlet(destinationEdit);
-  };
 
   if (destinations.unusedDestinations.length > 0) {
     return useMemo(() => {
@@ -48,7 +44,7 @@ const Destinations = ({selectedAccount, destinations}) => {
             </TableHeaderCell>
           </TableHeader>
           {({ item }) => (
-            <TableRow onClick={() => openDestinationEdit(item.destinationId, item.destinationType)}>
+            <TableRow onClick={() => openDestinationEdit(selectedAccount, item.destinationId, item.destinationType)}>
               <TableRowCell>{item.name}</TableRowCell>
               <TableRowCell>{item.destinationType}</TableRowCell>
             </TableRow>
