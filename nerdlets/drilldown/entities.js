@@ -3,8 +3,10 @@ import { getCardColor, getEntities, getTooltip } from '../shared/utils';
 import ExportButton from '../shared/export';
 import { Progress } from 'semantic-ui-react';
 import { navigation, Table, TableHeader, TableHeaderCell, TableRow, TableRowCell, TextField, Spinner } from 'nr1';
-  
-const Entities = ({selectedAccount, entities}) => {
+
+const Entities = ({ selectedAccount }) => {
+  const [loading, setLoading] = useState(true);
+  const [entities, setEntities] = useState(null);
   const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
