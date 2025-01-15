@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/newrelic/nr1-aqm/compare/v1.0.1...v1.0.2) (2025-01-15)
+
+
+### Bug Fixes
+
+* catalog screenshot size ([ff5234f](https://github.com/newrelic/nr1-aqm/commit/ff5234f881964b7a05722d8459d57de7508dc6cb))
+
 ## [1.0.1](https://github.com/newrelic/nr1-aqm/compare/v1.0.0...v1.0.1) (2025-01-15)
 
 
