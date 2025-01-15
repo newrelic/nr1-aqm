@@ -1,0 +1,19 @@
+{
+  "tagline": "Alert Quality Management",
+  "repository": "https://github.com/newrelic/nr1-aqm.git",
+  "details": "Alert Quality Management is a visualization that provides insight into improving overall alert hygiene.",
+  "categoryTerms": [],
+  "keywords": ["aqm", "alerts"],
+  "support": {
+    "issues": {
+      "url": "https://github.com/newrelic/nr1-aqm/issues"
+    },
+    "email": {
+      "address": "opensource+nr-aqm@newrelic.com"
+    },
+    "community": {
+      "url": "https://github.com/newrelic/nr1-aqm/issues"
+    }
+  },
+  "whatsNew": "Initial AQM Release"
+}
