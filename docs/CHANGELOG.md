@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/newrelic/nr1-aqm/compare/v1.0.0...v1.0.1) (2025-01-15)
+
+
+### Bug Fixes
+
+* repolinter action ([66ae373](https://github.com/newrelic/nr1-aqm/commit/66ae373d5dd98e9e3ab9a6470fb35352aadaa5b5))
+
 # 1.0.0 (2025-01-15)
 
 
