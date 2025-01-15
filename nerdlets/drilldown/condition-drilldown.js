@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { PlatformStateContext, Spinner } from 'nr1';
 import { getPolicies } from '../shared/utils';
 import ConditionHistory from './conditions';
@@ -10,32 +11,38 @@ const ConditionDrilldown = ({ selectedAccount }) => {
 
   useEffect(() => {
     const fetchAndSetPolicies = async () => {
-      let start = new Date(Date.now());
-
       const data = await getPolicies(selectedAccount, null);
       setPolicies(data);
       setLoading(false);
     };
 
     fetchAndSetPolicies(selectedAccount);
-
   }, [selectedAccount, timeRange]);
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center'}}>
+      <div style={{ textAlign: 'center' }}>
         <h3>Loading</h3>
-        <Spinner type={Spinner.TYPE.DOT}/>
+        <Spinner type={Spinner.TYPE.DOT} />
       </div>
     );
   }
 
   if (!loading && policies.length > 0) {
-    return <ConditionHistory selectedAccount={selectedAccount} timeRange={timeRange} policies={policies}/>;
+    return (
+      <ConditionHistory
+        selectedAccount={selectedAccount}
+        timeRange={timeRange}
+        policies={policies}
+      />
+    );
   }
 
-  return <h2>No Policies Found</h2>
+  return <h2>No Policies Found</h2>;
+};
 
-}
+ConditionDrilldown.propTypes = {
+  selectedAccount: PropTypes.object,
+};
 
 export default ConditionDrilldown;

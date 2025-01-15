@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Tab } from 'semantic-ui-react';
 import Notifications from '../drilldown/notifications';
 import Incidents from '../drilldown/incidents';
@@ -11,37 +12,41 @@ const Drilldown = ({ account }) => {
       menuItem: 'Alerts',
       render: () => (
         <Tab.Pane>
-          <Incidents selectedAccount={account}/>
+          <Incidents selectedAccount={account} />
         </Tab.Pane>
-      )
+      ),
     },
     {
       menuItem: 'Notifications',
       render: () => (
         <Tab.Pane>
-          <Notifications selectedAccount={account}/>
+          <Notifications selectedAccount={account} />
         </Tab.Pane>
-      )
+      ),
     },
     {
       menuItem: 'Entity Coverage',
       render: () => (
         <Tab.Pane>
-          <Entities selectedAccount={account}/>
+          <Entities selectedAccount={account} />
         </Tab.Pane>
-      )
+      ),
     },
     {
       menuItem: 'Condition History',
       render: () => (
         <Tab.Pane>
-          <ConditionDrilldown selectedAccount={account}/>
+          <ConditionDrilldown selectedAccount={account} />
         </Tab.Pane>
-      )
-    }
+      ),
+    },
   ];
 
-  return <Tab panes={panes}/>
-}
+  return <Tab panes={panes} />;
+};
+
+Drilldown.propTypes = {
+  account: PropTypes.object,
+};
 
 export default Drilldown;
