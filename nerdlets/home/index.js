@@ -21,15 +21,13 @@ const AqmNerdlet = () => {
         { label: '3 days', offset: 259200000 },
         { label: '7 days', offset: 604800000 },
         { label: '14 days', offset: 1209600000 },
-        { label: '30 days', offset: 2592000000 }
+        { label: '30 days', offset: 2592000000 },
         //{ label: '90 days', offset: 7776000000 }
-      ]
-    })
+      ],
+    });
   }, [timeRange.duration]);
 
-
-  return <OverviewPage />
-
-}
+  return <OverviewPage />;
+};
 
 export default AqmNerdlet;

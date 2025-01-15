@@ -2,24 +2,30 @@ import { NerdGraphQuery } from 'nr1';
 import { EXCLUDED_ENTITY_TYPES } from './constants';
 
 export const chunkData = (d, size) => {
-  return new Promise((resolve, reject) => {
-    let chunked = d.reduceRight((r,i,_,s) => (r.push(s.splice(0,size)),r),[]);
-    resolve(chunked)
-  })
+  return new Promise((resolve) => {
+    let chunked = d.reduceRight(
+      (r, i, _, s) => (r.push(s.splice(0, size)), r),
+      []
+    );
+    resolve(chunked);
+  });
 };
 
 export const pluckTagValue = (tags, keyToPluck) => {
-  let result = tags.find(t => t.key === keyToPluck);
+  let result = tags.find((t) => t.key === keyToPluck);
   return result ? result.values[0] : null;
 };
 
-
-export const getConditionTimeline = async (account, conditionId, timeClause) => {
+export const getConditionTimeline = async (
+  account,
+  conditionId,
+  timeClause
+) => {
   let critical = `FROM NrAiIncident SELECT uniques(timestamp, 3000) as 'critical_times' where event = 'open' and priority = 'critical' and conditionId = ${conditionId} ${timeClause}`;
   let warning = `FROM NrAiIncident SELECT uniques(timestamp, 3000) as 'warning_times' where event = 'open' and priority = 'warning' and conditionId = ${conditionId} ${timeClause}`;
-  let muted  = `FROM NrAiIncident SELECT uniques(timestamp, 3000) as 'muted_times' where event = 'open' and muted is true and conditionId = ${conditionId} ${timeClause}`;
+  let muted = `FROM NrAiIncident SELECT uniques(timestamp, 3000) as 'muted_times' where event = 'open' and muted is true and conditionId = ${conditionId} ${timeClause}`;
 
-  const gql =  `
+  const gql = `
   {
     actor {
       criticalTimestamps: nrql(accounts: [${account.accountId}], query: "${critical}", timeout: 120) {results}
@@ -29,19 +35,23 @@ export const getConditionTimeline = async (account, conditionId, timeClause) => 
   }`;
 
   let data = await NerdGraphQuery.query({
-    query: gql
+    query: gql,
   });
 
   const result = data?.data?.actor;
-  const all = {'warning': result?.warningTimestamps?.results[0]?.warning_times, 'critical': result?.criticalTimestamps?.results[0]?.critical_times, 'muted': result?.mutedTimestamps?.results[0]?.muted_times }
+  const all = {
+    warning: result?.warningTimestamps?.results[0]?.warning_times,
+    critical: result?.criticalTimestamps?.results[0]?.critical_times,
+    muted: result?.mutedTimestamps?.results[0]?.muted_times,
+  };
   return all;
+};
 
-}
-
-export const getEntities = async (account, cursor) => { //TODO: add relatedEntities call once entity-condition relationships exist (to fetch all entities + alert coverage -- # of conditions targeting entities + what specific conditions)
+export const getEntities = async (account, cursor) => {
+  //TODO: add relatedEntities call once entity-condition relationships exist (to fetch all entities + alert coverage -- # of conditions targeting entities + what specific conditions)
   let gql = ``;
 
-  const entityFilter = EXCLUDED_ENTITY_TYPES.map(e => `'${e}'`).join(',');
+  const entityFilter = EXCLUDED_ENTITY_TYPES.map((e) => `'${e}'`).join(',');
 
   if (cursor == null) {
     gql = `
@@ -86,7 +96,7 @@ export const getEntities = async (account, cursor) => { //TODO: add relatedEntit
   }
 
   const data = await NerdGraphQuery.query({
-    query: gql
+    query: gql,
   });
 
   if (data.error) {
@@ -104,7 +114,7 @@ export const getEntities = async (account, cursor) => { //TODO: add relatedEntit
     const nextResult = await getEntities(account, nextCursor);
     return result.concat(nextResult);
   }
-}
+};
 
 export const getPolicies = async (account, cursor) => {
   let gql = ``;
@@ -147,7 +157,7 @@ export const getPolicies = async (account, cursor) => {
   }
 
   const data = await NerdGraphQuery.query({
-    query: gql
+    query: gql,
   });
 
   if (data.error) {
@@ -157,7 +167,8 @@ export const getPolicies = async (account, cursor) => {
   }
 
   let result = data?.data?.actor?.account?.alerts?.policiesSearch?.policies;
-  let nextCursor = data?.data?.actor?.account?.alerts?.policiesSearch?.nextCursor;
+  let nextCursor =
+    data?.data?.actor?.account?.alerts?.policiesSearch?.nextCursor;
 
   if (nextCursor == null) {
     return result;
@@ -165,7 +176,7 @@ export const getPolicies = async (account, cursor) => {
     const nextResult = await getPolicies(account, nextCursor);
     return result.concat(nextResult);
   }
-}
+};
 
 //TODO: switch to parity Alerts {} GQL once product fully consolidates all condition types to NRQL (no GQL endpoints that contain all condition config detail today)
 export const getConditions = async (account, policy, cursor) => {
@@ -219,9 +230,8 @@ export const getConditions = async (account, policy, cursor) => {
   }
 
   const data = await NerdGraphQuery.query({
-    query: gql
+    query: gql,
   });
-
 
   if (data.error) {
     console.debug(`Error fetching conditions`);
@@ -237,7 +247,7 @@ export const getConditions = async (account, policy, cursor) => {
     const nextResult = await getConditions(account, policy, nextCursor);
     return result.concat(nextResult);
   }
-}
+};
 
 export const getCardColor = (cardValue, type) => {
   if (cardValue < 25 || isNaN(cardValue) || cardValue == undefined) {
@@ -261,52 +271,61 @@ export const getCardColor = (cardValue, type) => {
     }
     return 'red';
   }
-}
+};
 
 export const getTooltip = (context) => {
   let text = '';
   switch (context) {
     case 'short_incidents':
-      text = 'The percentage of incidents that are open for less than 5 minutes, across all conditions.';
+      text =
+        'The percentage of incidents that are open for less than 5 minutes, across all conditions.';
       break;
     case 'long_incidents':
-      text = 'The percentage of incidents that are open for longer than 1 day, across all conditions.';
+      text =
+        'The percentage of incidents that are open for longer than 1 day, across all conditions.';
       break;
     case 'unsent_issues':
-      text = 'The percentage of issues that did not route to any destinations (no notifications sent).';
+      text =
+        'The percentage of issues that did not route to any destinations (no notifications sent).';
       break;
     case 'unused_dests':
-      text = 'The percentage of destinations that are not attached to any workflows.';
+      text =
+        'The percentage of destinations that are not attached to any workflows.';
       break;
     case 'overlap_workflows':
       text = 'The percentage of workflows with duplicate filters.';
       break;
     case 'no_channels':
-      text = 'The percentage of workflows with no destinations (channels) attached. This often stems from removing workflows or channels via API/Terraform.';
+      text =
+        'The percentage of workflows with no destinations (channels) attached. This often stems from removing workflows or channels via API/Terraform.';
       break;
     case 'cond_incidents':
       text = 'The trend of open incidents over the time period selected.';
       break;
     case 'cond_signal':
-      text = 'The trend of errors when evaluating the signal exhibited over the time period selected.';
+      text =
+        'The trend of errors when evaluating the signal exhibited over the time period selected.';
       break;
     case 'cond_entities':
-      text = 'The top 50 entities that have violated the selected condition over the time period selected.';
+      text =
+        'The top 50 entities that have violated the selected condition over the time period selected.';
       break;
     case 'cond_audit':
-      text = 'A list of any changes made to the condition over the time period selected.';
+      text =
+        'A list of any changes made to the condition over the time period selected.';
       break;
     case 'entity_coverage':
-      text = 'The bar below represents the percentage of entities with no alert conditions attached.';
+      text =
+        'The bar below represents the percentage of entities with no alert conditions attached.';
       break;
   }
   return text;
-}
+};
 
 export const getAlertCounts = async (timeClause, account) => {
-    const notificationsQ = `FROM NrAiNotification SELECT count(*) ${timeClause}`;
-    const issuesQ = `FROM NrAiIssue SELECT uniqueCount(issueId) as 'issueCount' where event in ('activate', 'close') ${timeClause}`;
-    const gql =  `
+  const notificationsQ = `FROM NrAiNotification SELECT count(*) ${timeClause}`;
+  const issuesQ = `FROM NrAiIssue SELECT uniqueCount(issueId) as 'issueCount' where event in ('activate', 'close') ${timeClause}`;
+  const gql = `
     {
       actor {
         notificationCount: nrql(accounts: [${account.id}], query: "${notificationsQ}", timeout: 90) {results}
@@ -314,31 +333,37 @@ export const getAlertCounts = async (timeClause, account) => {
       }
     }`;
 
-    let data = await NerdGraphQuery.query({
-      query: gql
-    });
+  let data = await NerdGraphQuery.query({
+    query: gql,
+  });
 
-    const result = data?.data?.actor;
-    const counts = {'accountId': account.id, 'accountName': account.name, 'notificationCount': result?.notificationCount?.results[0]?.count, 'issueCount': result?.issueCount?.results[0]?.issueCount }
-    return counts;
+  const result = data?.data?.actor;
+  const counts = {
+    accountId: account.id,
+    accountName: account.name,
+    notificationCount: result?.notificationCount?.results[0]?.count,
+    issueCount: result?.issueCount?.results[0]?.issueCount,
+  };
+  return counts;
 };
 
-export const generateDayChunks = (timeRange, startTime) => { //returns 1 day chunks to use in nrql since-until clauses for fetching issues over > 1 day period (more accurate)
-    const ONE_DAY_MS = 86400000;
-    let currentStartTime = startTime - timeRange.duration;
-    let dayChunks = [];
+export const generateDayChunks = (timeRange, startTime) => {
+  //returns 1 day chunks to use in nrql since-until clauses for fetching issues over > 1 day period (more accurate)
+  const ONE_DAY_MS = 86400000;
+  let currentStartTime = startTime - timeRange.duration;
+  let dayChunks = [];
 
-    if (timeRange.duration > 86400000) {
-      for (let i=0; i<timeRange.duration; i += ONE_DAY_MS) {
-        let currentEndTime = currentStartTime + ONE_DAY_MS;
-        dayChunks.push({since: currentStartTime, until: currentEndTime});
-        currentStartTime = currentEndTime;
-      }
-      return dayChunks;
-    } else {
-      return `SINCE ${timeRange.duration / 60000} minutes ago`; // if you have > 10k notifications in 1 day within a given account, do better.
+  if (timeRange.duration > 86400000) {
+    for (let i = 0; i < timeRange.duration; i += ONE_DAY_MS) {
+      let currentEndTime = currentStartTime + ONE_DAY_MS;
+      dayChunks.push({ since: currentStartTime, until: currentEndTime });
+      currentStartTime = currentEndTime;
     }
-}
+    return dayChunks;
+  } else {
+    return `SINCE ${timeRange.duration / 60000} minutes ago`; // if you have > 10k notifications in 1 day within a given account, do better.
+  }
+};
 
 export const getWorkflows = async (account, cursor) => {
   let gql = ``;
@@ -414,9 +439,8 @@ export const getWorkflows = async (account, cursor) => {
 
   const data = await NerdGraphQuery.query({
     query: gql,
-    fetchPolicyType: NerdGraphQuery.FETCH_POLICY_TYPE.NO_CACHE
+    fetchPolicyType: NerdGraphQuery.FETCH_POLICY_TYPE.NO_CACHE,
   });
-
 
   if (data.error) {
     console.debug(`Error fetching workflows`);
@@ -424,7 +448,8 @@ export const getWorkflows = async (account, cursor) => {
     return null;
   }
   let result = data?.data?.actor?.account?.aiWorkflows?.workflows?.entities;
-  let nextCursor = data?.data?.actor?.account?.aiWorkflows?.workflows?.nextCursor;
+  let nextCursor =
+    data?.data?.actor?.account?.aiWorkflows?.workflows?.nextCursor;
 
   if (nextCursor == null) {
     return result;
@@ -492,7 +517,7 @@ export const getDestinations = async (account, cursor) => {
 
   const data = await NerdGraphQuery.query({
     query: gql,
-    fetchPolicyType: NerdGraphQuery.FETCH_POLICY_TYPE.NO_CACHE
+    fetchPolicyType: NerdGraphQuery.FETCH_POLICY_TYPE.NO_CACHE,
   });
 
   if (data.error) {
@@ -501,8 +526,10 @@ export const getDestinations = async (account, cursor) => {
     return null;
   }
 
-  let result = data?.data?.actor?.account?.aiNotifications?.destinations?.entities;
-  let nextCursor = data?.data?.actor?.account?.aiNotifications?.destinations?.nextCursor;
+  let result =
+    data?.data?.actor?.account?.aiNotifications?.destinations?.entities;
+  let nextCursor =
+    data?.data?.actor?.account?.aiNotifications?.destinations?.nextCursor;
 
   if (nextCursor == null) {
     return result;
@@ -510,9 +537,10 @@ export const getDestinations = async (account, cursor) => {
     const nextResult = await getDestinations(account, nextCursor);
     return result.concat(nextResult);
   }
-}
+};
 
-export const getDestinationRelationships = async (guids) => { //max 25 guids per call
+export const getDestinationRelationships = async (guids) => {
+  //max 25 guids per call
   const gql = `
     {
     actor {
@@ -538,7 +566,7 @@ export const getDestinationRelationships = async (guids) => { //max 25 guids per
   `;
 
   const data = await NerdGraphQuery.query({
-    query: gql
+    query: gql,
   });
 
   if (data.error) {
@@ -549,7 +577,7 @@ export const getDestinationRelationships = async (guids) => { //max 25 guids per
 
   let result = data?.data?.actor?.entities;
   return result;
-}
+};
 
 export const getNotifications = async (account, sinceClause) => {
   let notificationIds = null;
@@ -559,7 +587,7 @@ export const getNotifications = async (account, sinceClause) => {
     notificationIds = `WITH aparse(issueLink, 'https://radar-api.service.newrelic.com/accounts/%/issues/*?%') as id FROM NrAiNotification SELECT uniques(id, 10000) as 'notifications' since ${sinceClause.since} until ${sinceClause.until}`;
   }
 
-  const gql =  `
+  const gql = `
   {
     actor {
       notifications: nrql(accounts: [${account.accountId}], query: "${notificationIds}", timeout: 120) {results}
@@ -567,12 +595,12 @@ export const getNotifications = async (account, sinceClause) => {
   }`;
 
   let data = await NerdGraphQuery.query({
-    query: gql
+    query: gql,
   });
 
   const result = data?.data?.actor?.notifications?.results[0]?.notifications;
   return result;
-}
+};
 
 // export const getIssuesAndNotifications = async (account, sinceClause) => {
 //   let issueIds = null;
@@ -601,7 +629,8 @@ export const getNotifications = async (account, sinceClause) => {
 //   return final;
 // }
 
-export const getIssues = async (account, cursor, timeWindow) => { //TODO: product to fix api behavior
+export const getIssues = async (account, cursor, timeWindow) => {
+  //TODO: product to fix api behavior
   let gql = ``;
   if (cursor == null) {
     gql = `
@@ -626,7 +655,7 @@ export const getIssues = async (account, cursor, timeWindow) => { //TODO: produc
         }
       }
     }
-  }`
+  }`;
   } else {
     gql = `
     {
@@ -656,9 +685,8 @@ export const getIssues = async (account, cursor, timeWindow) => { //TODO: produc
   }
 
   const data = await NerdGraphQuery.query({
-    query: gql
+    query: gql,
   });
-
 
   if (data.error) {
     console.debug(`Error fetching issues`);
@@ -674,7 +702,7 @@ export const getIssues = async (account, cursor, timeWindow) => { //TODO: produc
     const nextResult = await getIssues(account, nextCursor, timeWindow);
     return result.concat(nextResult);
   }
-}
+};
 
 export const getIncidents = async (account, timeClause) => {
   const underFiveSummaryQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds <= 300) as 'percentUnder5' WHERE event = 'close' ${timeClause}`;
@@ -682,7 +710,7 @@ export const getIncidents = async (account, timeClause) => {
   const overDaySummaryQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds >= 86400) as 'percentOverADay' WHERE event = 'close' ${timeClause}`;
   const overDayDrilldownQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds >= 86400) as 'percentOverADay' WHERE event = 'close' facet policyName, conditionName LIMIT 100 ${timeClause}`;
 
-  const gql =  `
+  const gql = `
   {
     actor {
       under5Summary: nrql(accounts: [${account.accountId}], query: "${underFiveSummaryQ}", timeout: 120) {results}
@@ -693,10 +721,15 @@ export const getIncidents = async (account, timeClause) => {
   }`;
 
   let data = await NerdGraphQuery.query({
-    query: gql
+    query: gql,
   });
 
   const result = data?.data?.actor;
-  const all = {'under5Summary': result?.under5Summary?.results[0]?.percentUnder5?.toFixed(2), 'under5Drilldown': result?.under5Drilldown?.results, 'over1Summary': result?.over1Summary?.results[0]?.percentOverADay?.toFixed(2), 'over1Drilldown': result?.over1Drilldown?.results }
+  const all = {
+    under5Summary: result?.under5Summary?.results[0]?.percentUnder5?.toFixed(2),
+    under5Drilldown: result?.under5Drilldown?.results,
+    over1Summary: result?.over1Summary?.results[0]?.percentOverADay?.toFixed(2),
+    over1Drilldown: result?.over1Drilldown?.results,
+  };
   return all;
-}
+};

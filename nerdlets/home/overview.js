@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { AccountsQuery, PlatformStateContext, Popover, Spinner, Table, TableHeader, TableHeaderCell, TableRow, TableRowCell, TextField } from 'nr1';
+import {
+  AccountsQuery,
+  PlatformStateContext,
+  Spinner,
+  Table,
+  TableHeader,
+  TableHeaderCell,
+  TableRow,
+  TableRowCell,
+  TextField,
+} from 'nr1';
 import { Modal } from 'semantic-ui-react';
 import { getAlertCounts } from '../shared/utils';
 import { MAX_CONCURRENCY } from '../shared/constants';
@@ -11,7 +21,9 @@ const OverviewPage = () => {
   const [searchText, setSearchText] = useState('');
   const [tableData, setTableData] = useState([]);
   const [column, setColumn] = useState(0);
-  const [sortingType, setSortingType] = useState(TableHeaderCell.SORTING_TYPE.NONE);
+  const [sortingType, setSortingType] = useState(
+    TableHeaderCell.SORTING_TYPE.NONE
+  );
   const [openDrilldown, setOpenDrilldown] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
 
@@ -21,7 +33,9 @@ const OverviewPage = () => {
     const fetchData = async () => {
       const timeClause = `SINCE ${timeRange.duration / 60000} minutes ago`;
       const table = await getData(timeClause);
-      const sortedTable = table.sort((a, b) => b.notificationCount - a.notificationCount);
+      const sortedTable = table.sort(
+        (a, b) => b.notificationCount - a.notificationCount
+      );
       await setTableData(sortedTable);
       setFetchingData(false);
     };
@@ -43,22 +57,25 @@ const OverviewPage = () => {
 
       let processed = [];
 
-      const drainProm = new Promise(resolve => {
+      const drainProm = new Promise((resolve) => {
         dataQueue.drain(() => {
           resolve(processed);
-        })
-      })
-
-      accounts.data.forEach(acct => {
-        dataQueue.push({timeClause: timeClause, acct: acct}, (err, result) => {
-          if (err) {
-            console.debug(`Error processing account: ` + acct.id);
-            console.debug(err);
-            return;
-          }
-          processed.push(result);
         });
-      })
+      });
+
+      accounts.data.forEach((acct) => {
+        dataQueue.push(
+          { timeClause: timeClause, acct: acct },
+          (err, result) => {
+            if (err) {
+              console.debug(`Error processing account: ` + acct.id);
+              console.debug(err);
+              return;
+            }
+            processed.push(result);
+          }
+        );
+      });
       return await drainProm;
     }
   };
@@ -86,36 +103,40 @@ const OverviewPage = () => {
     return (
       <div className="loader">
         <h3>Loading</h3>
-        <Spinner type={Spinner.TYPE.DOT}/>
+        <Spinner type={Spinner.TYPE.DOT} />
       </div>
     );
   }
 
   if (!fetchingData && tableData.length > 0) {
-    const filteredTable = tableData.filter(t => t.accountName.toLowerCase().includes(searchText.toLowerCase()));
+    const filteredTable = tableData.filter((t) =>
+      t.accountName.toLowerCase().includes(searchText.toLowerCase())
+    );
     return (
       <>
-        {selectedAccount !== null ?
+        {selectedAccount !== null ? (
           <Modal
-            size='fullscreen'
+            size="fullscreen"
             open={openDrilldown}
             onClose={onClose}
             closeIcon
             className="modal"
           >
-          <Modal.Header>Drilldown - {selectedAccount.accountName}</Modal.Header>
-          <Modal.Content scrolling>
-            <Drilldown account={selectedAccount}/>
-          </Modal.Content>
+            <Modal.Header>
+              Drilldown - {selectedAccount.accountName}
+            </Modal.Header>
+            <Modal.Content scrolling>
+              <Drilldown account={selectedAccount} />
+            </Modal.Content>
           </Modal>
-          :
+        ) : (
           ''
-        }
+        )}
         <TextField
-          placeholder='Search accounts...'
+          placeholder="Search accounts..."
           value={searchText || ''}
           type={TextField.TYPE.SEARCH}
-          onChange={e => setSearchText(e.target.value)}
+          onChange={(e) => setSearchText(e.target.value)}
         />
         &nbsp;&nbsp;&nbsp;
         <Table items={filteredTable}>
@@ -124,37 +145,45 @@ const OverviewPage = () => {
               value={({ item }) => item.accountId}
               sortable
               sortingOrder={3}
-              sortingType={column === 3 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE}
+              sortingType={
+                column === 3 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE
+              }
               onClick={(evt, data) => _onClickHeader(3, data)}
             >
-            <b>Account ID</b>
+              <b>Account ID</b>
             </TableHeaderCell>
             <TableHeaderCell
               value={({ item }) => item.accountName}
               sortable
               sortingOrder={0}
-              sortingType={column === 0 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE}
+              sortingType={
+                column === 0 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE
+              }
               onClick={(evt, data) => _onClickHeader(0, data)}
             >
-            <b>Account Name</b>
+              <b>Account Name</b>
             </TableHeaderCell>
             <TableHeaderCell
               value={({ item }) => item.notificationCount}
               sortable
               sortingOrder={1}
-              sortingType={column === 1 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE}
+              sortingType={
+                column === 1 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE
+              }
               onClick={(evt, data) => _onClickHeader(1, data)}
             >
-            <b># Notifications</b>
+              <b># Notifications</b>
             </TableHeaderCell>
             <TableHeaderCell
               value={({ item }) => item.issueCount}
               sortable
               sortingOrder={2}
-              sortingType={column === 2 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE}
+              sortingType={
+                column === 2 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE
+              }
               onClick={(evt, data) => _onClickHeader(2, data)}
             >
-            <b># Issues</b>
+              <b># Issues</b>
             </TableHeaderCell>
           </TableHeader>
           {({ item }) => (
@@ -167,10 +196,10 @@ const OverviewPage = () => {
           )}
         </Table>
       </>
-    )
+    );
   }
 
-  return <h2>No Data Found</h2>
-}
+  return <h2>No Data Found</h2>;
+};
 
 export default OverviewPage;

@@ -1,8 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { getCardColor, getEntities, getTooltip } from '../shared/utils';
 import ExportButton from '../shared/export';
 import { Progress } from 'semantic-ui-react';
-import { navigation, Table, TableHeader, TableHeaderCell, TableRow, TableRowCell, TextField, Spinner } from 'nr1';
+import {
+  Table,
+  TableHeader,
+  TableHeaderCell,
+  TableRow,
+  TableRowCell,
+  TextField,
+  Spinner,
+} from 'nr1';
 
 const Entities = ({ selectedAccount }) => {
   const [loading, setLoading] = useState(true);
@@ -18,31 +27,37 @@ const Entities = ({ selectedAccount }) => {
         setLoading(false);
         return;
       } else {
-        const noAlerts = data.filter(e => {
+        const noAlerts = data.filter((e) => {
           return e.alertSeverity == 'NOT_CONFIGURED';
         });
 
-        const percentMissingAlerts = (noAlerts.length / data.length)*100
+        const percentMissingAlerts = (noAlerts.length / data.length) * 100;
 
-        setEntities({'allEntities': data, 'noAlerts': noAlerts, 'percentMissing': percentMissingAlerts.toFixed(2)});
+        setEntities({
+          allEntities: data,
+          noAlerts: noAlerts,
+          percentMissing: percentMissingAlerts.toFixed(2),
+        });
         setLoading(false);
       }
     };
 
     fetchAndSetEntities();
-  }, [selectedAccount])
+  }, [selectedAccount]);
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center'}}>
+      <div style={{ textAlign: 'center' }}>
         <h3>Loading</h3>
-        <Spinner type={Spinner.TYPE.DOT}/>
+        <Spinner type={Spinner.TYPE.DOT} />
       </div>
     );
   }
 
   if (!loading && entities && entities.noAlerts?.length > 0) {
-    const filtered = entities.noAlerts.filter(e => e.name.toLowerCase().includes(searchText.toLowerCase()));
+    const filtered = entities.noAlerts.filter((e) =>
+      e.name.toLowerCase().includes(searchText.toLowerCase())
+    );
     return (
       <>
         <h5>{getTooltip('entity_coverage')}</h5>
@@ -54,44 +69,51 @@ const Entities = ({ selectedAccount }) => {
           percent={entities.percentMissing}
         />
         <TextField
-          placeholder='Search entities..'
+          placeholder="Search entities.."
           value={searchText || ''}
           type={TextField.TYPE.SEARCH}
-          onChange={e => setSearchText(e.target.value)}
-          style={{marginTop: '10px'}}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ marginTop: '10px' }}
         />
         <ExportButton
           data={filtered}
-          type='entities'
+          type="entities"
           filename={`entities_no_alerts.csv`}
-          displayText='Export'
+          displayText="Export"
         />
         <Table items={filtered}>
           <TableHeader>
-            <TableHeaderCell
-            value={({ item }) => item.name}
-            >
-            <b>Name</b>
+            <TableHeaderCell value={({ item }) => item.name}>
+              <b>Name</b>
             </TableHeaderCell>
-            <TableHeaderCell
-            value={({ item }) => item.type}
-            >
-            <b>Type</b>
+            <TableHeaderCell value={({ item }) => item.type}>
+              <b>Type</b>
             </TableHeaderCell>
           </TableHeader>
           {({ item }) => (
             <TableRow>
-              <TableRowCell><a href={`https://one.newrelic.com/redirect/entity/${item.guid}`} target="_blank" rel="noreferrer">{item.name}</a></TableRowCell>
+              <TableRowCell>
+                <a
+                  href={`https://one.newrelic.com/redirect/entity/${item.guid}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {item.name}
+                </a>
+              </TableRowCell>
               <TableRowCell>{item.type}</TableRowCell>
             </TableRow>
           )}
         </Table>
       </>
-    )
+    );
   }
 
-  return <h2>No Entities Missing Alerts!</h2>
+  return <h2>No Entities Missing Alerts!</h2>;
+};
 
+Entities.propTypes = {
+  selectedAccount: PropTypes.object,
 };
 
 export default Entities;
