@@ -26,7 +26,7 @@ This application provides insight into alert hygiene and overall cleanliness of 
 
 ## Dependencies
 
-[New Relic Alerts](https://docs.newrelic.com/docs/alerts/overview/) configured
+[New Relic Alerts](https://docs.newrelic.com/docs/alerts/overview/) configured.
 
 ## Enabling this App
 
