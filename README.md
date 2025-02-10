@@ -14,7 +14,7 @@ This application provides insight into alert hygiene and overall cleanliness of 
    * Unsent Issues (Noise) - Active issues that did not route to any destinations
    * Unused Destinations - Destinations created but not attached to any Workflows
    * Overlapping Workflows - Workflows with duplicate filters (often the cause of duplicate notifications)
-   * Non-Covered Entities - Entities with no conditions targeting them (no alerts).
+   * Non-Covered Entities - Entities with no conditions targeting them (no alerts)
 * Condition History - See the history of incidents that have triggered for a given policy/condition, as well as any recent changes, signal errors, and top offending entities.
 * Exportable reports
 
@@ -33,7 +33,7 @@ This application provides insight into alert hygiene and overall cleanliness of 
 This App is available via the New Relic Catalog.
 
 To enable it in your account:
-1. go to `Integrations & Agents > Apps and Visualizations` and search for "Alert Quality Management"
+1. Go to `Integrations & Agents > Apps and Visualizations` and search for "Alert Quality Management"
 2. Click the `Alert Quality Management` card, and then click the `Add this App` button to add it to your account(s)
 3. Click `Open App` to launch the app (note: on the first time accessing the app, you may be prompted to enable it)
 
