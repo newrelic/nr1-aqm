@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/newrelic/nr1-aqm/compare/v1.0.2...v1.0.3) (2025-02-10)
+
+
+### Bug Fixes
+
+* force version bump ([93138b1](https://github.com/newrelic/nr1-aqm/commit/93138b16373187f205b39f642e8305b85e5b50e6))
+
 ## [1.0.2](https://github.com/newrelic/nr1-aqm/compare/v1.0.1...v1.0.2) (2025-01-15)
 
 
