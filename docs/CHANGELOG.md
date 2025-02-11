@@ -1,3 +1,12 @@
+## [1.0.5](https://github.com/newrelic/nr1-aqm/compare/v1.0.4...v1.0.5) (2025-02-11)
+
+
+### Bug Fixes
+
+* all cachev1 refs ([f7d29c7](https://github.com/newrelic/nr1-aqm/commit/f7d29c7299926ffcce3401f389002d3aaf3eb6cd))
+* retrigger catalog flow ([8442130](https://github.com/newrelic/nr1-aqm/commit/84421303864c8838ccb370167d31d5c02aa6238c))
+* upgrade actions/cache v1->v4 ([117d041](https://github.com/newrelic/nr1-aqm/commit/117d04191435102fce0f8492ce1ff4608c4b72ef))
+
 ## [1.0.4](https://github.com/newrelic/nr1-aqm/compare/v1.0.3...v1.0.4) (2025-02-11)
 
 
