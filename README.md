@@ -30,7 +30,7 @@ This application provides insight into alert hygiene and overall cleanliness of 
 
 ## Enabling this App
 
-This App is available via the New Relic Catalog.
+This app is available via the New Relic Catalog.
 
 To enable it in your account:
 1. Go to `Integrations & Agents > Apps and Visualizations` and search for "Alert Quality Management"
