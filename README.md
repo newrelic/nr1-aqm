@@ -15,7 +15,8 @@ This application provides insight into alert hygiene and overall cleanliness of 
    * Unused Destinations - Destinations created but not attached to any Workflows
    * Overlapping Workflows - Workflows with duplicate filters (often the cause of duplicate notifications)
    * Non-Covered Entities - Entities with no conditions targeting them (no alerts)
-* Condition History - See the history of incidents that have triggered for a given policy/condition, as well as any recent changes, signal errors, and top offending entities.
+* Condition History - See the history of incidents that have triggered for a given policy/condition, as well as any recent changes, signal errors, and top offending entities
+* CCU Optimization - Breakdown of alert conditions CCU by condition id, optimization recommendations for reducing CCU, and 1 click drilldown into a given condition
 * Exportable reports
 
 ## Screenshots
