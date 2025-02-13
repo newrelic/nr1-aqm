@@ -185,6 +185,28 @@ const OverviewPage = () => {
             >
               <b># Issues</b>
             </TableHeaderCell>
+            <TableHeaderCell
+              value={({ item }) => item.ccu}
+              sortable
+              sortingOrder={4}
+              sortingType={
+                column === 4 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE
+              }
+              onClick={(evt, data) => _onClickHeader(4, data)}
+            >
+              <b># CCUs</b>
+            </TableHeaderCell>
+            <TableHeaderCell
+              value={({ item }) => item.ccuPercent}
+              sortable
+              sortingOrder={5}
+              sortingType={
+                column === 5 ? sortingType : TableHeaderCell.SORTING_TYPE.NONE
+              }
+              onClick={(evt, data) => _onClickHeader(5, data)}
+            >
+              <b>% CCU vs Total</b>
+            </TableHeaderCell>
           </TableHeader>
           {({ item }) => (
             <TableRow onClick={() => _onClickTableRow(item)}>
@@ -192,6 +214,10 @@ const OverviewPage = () => {
               <TableRowCell>{item.accountName}</TableRowCell>
               <TableRowCell>{item.notificationCount}</TableRowCell>
               <TableRowCell>{item.issueCount}</TableRowCell>
+              <TableRowCell>{item.ccu ? Math.round(item.ccu) : 0}</TableRowCell>
+              <TableRowCell>
+                {item.ccuPercent ? Math.round(item.ccuPercent) : 0}%
+              </TableRowCell>
             </TableRow>
           )}
         </Table>

@@ -5,6 +5,7 @@ import Notifications from '../drilldown/notifications';
 import Incidents from '../drilldown/incidents';
 import ConditionDrilldown from '../drilldown/condition-drilldown';
 import Entities from '../drilldown/entities';
+import CcuOptimization from '../drilldown/ccu';
 
 const Drilldown = ({ account }) => {
   const panes = [
@@ -37,6 +38,14 @@ const Drilldown = ({ account }) => {
       render: () => (
         <Tab.Pane>
           <ConditionDrilldown selectedAccount={account} />
+        </Tab.Pane>
+      ),
+    },
+    {
+      menuItem: 'CCU Optimization',
+      render: () => (
+        <Tab.Pane>
+          <CcuOptimization selectedAccount={account} />
         </Tab.Pane>
       ),
     },

@@ -57,6 +57,13 @@ const ExportButton = ({ data, type, filename, displayText }) => {
       ];
       formattedData = data;
       break;
+    case 'ccu':
+      headers = [
+        { key: 'facet', label: 'condition_id' },
+        { key: 'ccu', label: 'ccu_total' },
+      ];
+      formattedData = data;
+      break;
   }
 
   return (
