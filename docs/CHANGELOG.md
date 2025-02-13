@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/newrelic/nr1-aqm/compare/v1.0.5...v1.1.0) (2025-02-13)
+
+
+### Features
+
+* ccu optimization ([f593c42](https://github.com/newrelic/nr1-aqm/commit/f593c42c74e0eaf40b44013c26699137b9ec49f3))
+
 ## [1.0.5](https://github.com/newrelic/nr1-aqm/compare/v1.0.4...v1.0.5) (2025-02-11)
 
 
