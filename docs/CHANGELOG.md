@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/newrelic/nr1-aqm/compare/v1.1.0...v1.1.1) (2025-09-18)
+
+
+### Bug Fixes
+
+* add ccu recommendations ([8713418](https://github.com/newrelic/nr1-aqm/commit/8713418912d3d0e9ae45602c9e9148ff6e2a61d8))
+
 # [1.1.0](https://github.com/newrelic/nr1-aqm/compare/v1.0.5...v1.1.0) (2025-02-13)
 
 
