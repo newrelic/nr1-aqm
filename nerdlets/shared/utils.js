@@ -354,6 +354,7 @@ const _analyzeConditionsForOptimization = (conditions) => {
       recommendations.push(`${RECOMMENDATIONS.slideWindow}`);
     }
     c.recommendations = recommendations;
+    c.recommendationCount = recommendations.length;
   });
 
   return conditions;

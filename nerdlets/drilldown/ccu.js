@@ -108,8 +108,9 @@ const CcuOptimization = ({ selectedAccount }) => {
         <div style={{ marginBottom: '20px' }}>
           <h5>
             Expand any section below for more information around alert condition
-            tuning to reduce CCU. Select the last column to view options for
-            opening the condition or viewing optimization recommendations.
+            tuning to reduce CCU. The table contains the top 100 CCU consuming
+            conditions, which enables identification for optimization
+            opportunities.
           </h5>
           <Accordion fluid styled>
             <Accordion.Title
@@ -254,6 +255,9 @@ const CcuOptimization = ({ selectedAccount }) => {
           <TableHeaderCell width="3fr" value={({ item }) => item.nrql}>
             <b>NRQL</b>
           </TableHeaderCell>
+          <TableHeaderCell value={({ item }) => item.recommendationCount}>
+            <b># Recommendations</b>
+          </TableHeaderCell>
           <TableHeaderCell value={({ item }) => item.ccu}>
             <b># CCUs</b>
           </TableHeaderCell>
@@ -263,9 +267,14 @@ const CcuOptimization = ({ selectedAccount }) => {
         </TableHeader>
         {({ item }) => (
           <TableRow actions={actions}>
-            <TableRowCell>{item.facet}</TableRowCell>
+            <TableRowCell onClick={() => _openCondition(item.facet)}>
+              <a>{item.facet}</a>
+            </TableRowCell>
             <TableRowCell>{item.name}</TableRowCell>
             <TableRowCell>{item.nrql}</TableRowCell>
+            <TableRowCell onClick={() => _openRecommendations(item)}>
+              <a>{item.recommendationCount}</a>
+            </TableRowCell>
             <TableRowCell>{Math.round(item.ccu)}</TableRowCell>
             <TableRowCell>
               {Math.round(

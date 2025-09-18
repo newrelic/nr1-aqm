@@ -7,6 +7,8 @@ const ExportButton = ({ data, type, filename, displayText }) => {
   let headers;
   let formattedData = [];
 
+  console.log('export-data', data);
+
   switch (type) {
     case 'short_incidents':
       headers = [
@@ -60,6 +62,10 @@ const ExportButton = ({ data, type, filename, displayText }) => {
     case 'ccu':
       headers = [
         { key: 'facet', label: 'condition_id' },
+        { key: 'name', label: 'condition_name' },
+        { key: 'nrql', label: 'condition_nrql' },
+        { key: 'recommendationCount', label: 'num_recommendations' },
+        { key: 'recommendations', label: 'recommendations' },
         { key: 'ccu', label: 'ccu_total' },
       ];
       formattedData = data;
