@@ -28,3 +28,8 @@ export const EXCLUDED_ENTITY_TYPES = [
   'AWSDYNAMODBGLOBALSECONDARYINDEX',
   'AWSVPCNETWORKINTERFACE',
 ];
+
+export const RECOMMENDATIONS = {
+  nrql: 'Query is too broad - add WHERE clause to narrow scope',
+  slideWindow: 'Consider removing sliding window',
+};

@@ -8,6 +8,7 @@ import {
   TableHeaderCell,
   TableRow,
   TableRowCell,
+  Toast,
 } from 'nr1';
 import { getTopCcuConditions } from '../shared/utils';
 import ExportButton from '../shared/export';
@@ -18,6 +19,7 @@ import {
   GridColumn,
   GridRow,
   Icon,
+  Modal,
   Segment,
 } from 'semantic-ui-react';
 
@@ -26,6 +28,8 @@ const CcuOptimization = ({ selectedAccount }) => {
   const [loading, setLoading] = useState(true);
   const [topConditions, setTopConditions] = useState(null);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [openRecommendations, setOpenRecommendations] = useState(false);
+  const [selectedCondition, setSelectedCondition] = useState(null);
 
   useEffect(() => {
     const fetchTopConditions = async () => {
@@ -44,13 +48,14 @@ const CcuOptimization = ({ selectedAccount }) => {
     setActiveIndex(newIndex);
   };
 
-  const _onRowClick = (conditionId) => {
+  const _openCondition = (conditionId) => {
     let guid = btoa(
       `${selectedAccount.accountId}|AIOPS|CONDITION|${conditionId}`
     );
     if (guid.endsWith('=')) {
       guid = guid.slice(0, -1);
     }
+
     window.open(
       `https://one.newrelic.com/redirect/entity/${guid}`,
       '_blank',
@@ -58,125 +63,200 @@ const CcuOptimization = ({ selectedAccount }) => {
     );
   };
 
+  const _openRecommendations = (selectedCondition) => {
+    setSelectedCondition(selectedCondition);
+    setOpenRecommendations(true);
+  };
+
+  const _closeRecommendations = () => {
+    setSelectedCondition(null);
+    setOpenRecommendations(false);
+  };
+
+  const renderRecommendationList = () => {
+    if (selectedCondition.recommendations.length > 0) {
+      return (
+        <ul style={{ marginLeft: '2%' }}>
+          {selectedCondition.recommendations.map((r, i) => (
+            <li key={i}>{r}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    return '';
+  };
+
   const renderInstruction = () => {
     return (
-      <div style={{ marginBottom: '20px' }}>
-        <h5>
-          Expand any section below for more information around alert condition
-          tuning to reduce CCU. Select any condition from the table to open its
-          current configuration.
-        </h5>
-        <Accordion fluid styled>
-          <Accordion.Title
-            active={activeIndex === 0}
-            index={0}
-            onClick={handleClick}
+      <>
+        {selectedCondition !== null ? (
+          <Modal
+            size="tiny"
+            open={openRecommendations}
+            onClose={_closeRecommendations}
+            closeIcon
           >
-            <Icon name="dropdown" />
-            Query Optimization
-          </Accordion.Title>
-          <Accordion.Content active={activeIndex === 0}>
-            <p>
-              Avoid broad queries targeting large amounts of data and use{' '}
-              <code>WHERE</code> filters to lessen the amount of events scanned.
-              When using NRQL filtering, try to use filters outside of the{' '}
-              <code>SELECT</code> statement if possible. Alert conditions will
-              match incoming data points that meet the criteria of filters
-              applied <i>after</i> the <code>FROM</code> clause.
-            </p>
-            <Segment>
-              <Grid columns={2} stackable textAlign="center">
-                <Divider vertical />
-                <GridRow verticalAlign="center">
-                  <GridColumn>
-                    <h3 style={{ color: 'green' }}>
-                      Good <Icon color="green" name="check circle" />
-                    </h3>
-                  </GridColumn>
-                  <GridColumn>
-                    <h3 style={{ color: 'red' }}>
-                      Bad <Icon color="red" name="x" />
-                    </h3>
-                  </GridColumn>
-                </GridRow>
-                <GridRow verticalAlign="center">
-                  <GridColumn>
-                    <code>{`FROM Transaction SELECT count(*) where appName like '%prod%'`}</code>
-                  </GridColumn>
-                  <GridColumn>
-                    <code className="bad">
-                      FROM Transaction SELECT count(*)
-                    </code>
-                  </GridColumn>
-                </GridRow>
-                <GridRow verticalAlign="center">
-                  <GridColumn>
-                    <code>
-                      FROM Log SELECT count(*){' '}
-                      <b>where message like &apos;%error%&apos;</b> FACET
-                      hostname
-                    </code>
-                  </GridColumn>
-                  <GridColumn>
-                    <code className="bad">
-                      FROM Log SELECT filter(count(*),{' '}
-                      <b>where message like &apos;%error%&apos;</b>) FACET
-                      hostname
-                    </code>
-                  </GridColumn>
-                </GridRow>
-              </Grid>
-            </Segment>
-          </Accordion.Content>
-          <Accordion.Title
-            active={activeIndex === 1}
-            index={1}
-            onClick={handleClick}
-          >
-            <Icon name="dropdown" />
-            Sliding Window
-          </Accordion.Title>
-          <Accordion.Content active={activeIndex === 1}>
-            <p>
-              Validate if{' '}
-              <a
-                href="https://docs.newrelic.com/docs/alerts/create-alert/create-alert-condition/create-nrql-alert-conditions/#sliding-window-aggregation"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Sliding Window
-              </a>{' '}
-              is truly needed. When enabled, this may cause data points to match
-              multiple overlapping time windows, which increases CCU.
-            </p>
-          </Accordion.Content>
-          <Accordion.Title
-            active={activeIndex === 2}
-            index={2}
-            onClick={handleClick}
-          >
-            <Icon name="dropdown" />
-            Noisy Conditions
-          </Accordion.Title>
-          <Accordion.Content active={activeIndex === 2}>
-            <p>
-              Remove noisy alert conditions that may be non-actionable. This can
-              include conditions that trigger short-lived issues (open time &lt;
-              5 minutes) or do not route to any destinations. See other tabs for
-              drilldowns into those areas.
-            </p>
-          </Accordion.Content>
-        </Accordion>
-      </div>
+            <Modal.Header>
+              Recommendations for Condition: {selectedCondition.name}
+            </Modal.Header>
+            <Modal.Content>{renderRecommendationList()}</Modal.Content>
+          </Modal>
+        ) : (
+          ''
+        )}
+        <div style={{ marginBottom: '20px' }}>
+          <h5>
+            Expand any section below for more information around alert condition
+            tuning to reduce CCU. The table contains the top 100 CCU consuming
+            conditions, which enables identification for optimization
+            opportunities.
+          </h5>
+          <Accordion fluid styled>
+            <Accordion.Title
+              active={activeIndex === 0}
+              index={0}
+              onClick={handleClick}
+            >
+              <Icon name="dropdown" />
+              Query Optimization
+            </Accordion.Title>
+            <Accordion.Content active={activeIndex === 0}>
+              <p>
+                Avoid broad queries targeting large amounts of data and use{' '}
+                <code>WHERE</code> filters to lessen the amount of events
+                scanned. When using NRQL filtering, try to use filters outside
+                of the <code>SELECT</code> statement if possible. Alert
+                conditions will match incoming data points that meet the
+                criteria of filters applied <i>after</i> the <code>FROM</code>{' '}
+                clause.
+              </p>
+              <Segment>
+                <Grid columns={2} stackable textAlign="center">
+                  <Divider vertical />
+                  <GridRow verticalAlign="center">
+                    <GridColumn>
+                      <h3 style={{ color: 'green' }}>
+                        Good <Icon color="green" name="check circle" />
+                      </h3>
+                    </GridColumn>
+                    <GridColumn>
+                      <h3 style={{ color: 'red' }}>
+                        Bad <Icon color="red" name="x" />
+                      </h3>
+                    </GridColumn>
+                  </GridRow>
+                  <GridRow verticalAlign="center">
+                    <GridColumn>
+                      <code>{`FROM Transaction SELECT count(*) where appName like '%prod%'`}</code>
+                    </GridColumn>
+                    <GridColumn>
+                      <code className="bad">
+                        FROM Transaction SELECT count(*)
+                      </code>
+                    </GridColumn>
+                  </GridRow>
+                  <GridRow verticalAlign="center">
+                    <GridColumn>
+                      <code>
+                        FROM Log SELECT count(*){' '}
+                        <b>where message like &apos;%error%&apos;</b> FACET
+                        hostname
+                      </code>
+                    </GridColumn>
+                    <GridColumn>
+                      <code className="bad">
+                        FROM Log SELECT filter(count(*),{' '}
+                        <b>where message like &apos;%error%&apos;</b>) FACET
+                        hostname
+                      </code>
+                    </GridColumn>
+                  </GridRow>
+                </Grid>
+              </Segment>
+            </Accordion.Content>
+            <Accordion.Title
+              active={activeIndex === 1}
+              index={1}
+              onClick={handleClick}
+            >
+              <Icon name="dropdown" />
+              Sliding Window
+            </Accordion.Title>
+            <Accordion.Content active={activeIndex === 1}>
+              <p>
+                Validate if{' '}
+                <a
+                  href="https://docs.newrelic.com/docs/alerts/create-alert/create-alert-condition/create-nrql-alert-conditions/#sliding-window-aggregation"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Sliding Window
+                </a>{' '}
+                is truly needed. When enabled, this may cause data points to
+                match multiple overlapping time windows, which increases CCU.
+              </p>
+            </Accordion.Content>
+            <Accordion.Title
+              active={activeIndex === 2}
+              index={2}
+              onClick={handleClick}
+            >
+              <Icon name="dropdown" />
+              Noisy Conditions
+            </Accordion.Title>
+            <Accordion.Content active={activeIndex === 2}>
+              <p>
+                Remove noisy alert conditions that may be non-actionable. This
+                can include conditions that trigger short-lived issues (open
+                time &lt; 5 minutes) or do not route to any destinations. See
+                other tabs for drilldowns into those areas.
+              </p>
+            </Accordion.Content>
+          </Accordion>
+        </div>
+      </>
     );
   };
 
   const renderConditionTable = () => {
+    const actions = [
+      {
+        label: 'View Condition',
+        onClick: (evt, { item }) => {
+          _openCondition(item.facet);
+        },
+      },
+      {
+        label: 'View Recommendations',
+        onClick: (evt, { item }) => {
+          if (item.recommendations.length > 0) {
+            _openRecommendations(item);
+          } else {
+            Toast.showToast({
+              title: 'No recommendations available',
+              description: `${item.name} has no optimization recommendations`,
+              type: Toast.TYPE.NORMAL,
+            });
+          }
+        },
+      },
+    ];
+
     return (
       <Table items={topConditions}>
         <TableHeader>
           <TableHeaderCell value={({ item }) => item.facet}>
             <b>Condition ID</b>
+          </TableHeaderCell>
+          <TableHeaderCell value={({ item }) => item.name}>
+            <b>Condition Name</b>
+          </TableHeaderCell>
+          <TableHeaderCell width="3fr" value={({ item }) => item.nrql}>
+            <b>NRQL</b>
+          </TableHeaderCell>
+          <TableHeaderCell value={({ item }) => item.recommendationCount}>
+            <b># Recommendations</b>
           </TableHeaderCell>
           <TableHeaderCell value={({ item }) => item.ccu}>
             <b># CCUs</b>
@@ -186,8 +266,15 @@ const CcuOptimization = ({ selectedAccount }) => {
           </TableHeaderCell>
         </TableHeader>
         {({ item }) => (
-          <TableRow onClick={() => _onRowClick(item.facet)}>
-            <TableRowCell>{item.facet}</TableRowCell>
+          <TableRow actions={actions}>
+            <TableRowCell onClick={() => _openCondition(item.facet)}>
+              <a>{item.facet}</a>
+            </TableRowCell>
+            <TableRowCell>{item.name}</TableRowCell>
+            <TableRowCell>{item.nrql}</TableRowCell>
+            <TableRowCell onClick={() => _openRecommendations(item)}>
+              <a>{item.recommendationCount}</a>
+            </TableRowCell>
             <TableRowCell>{Math.round(item.ccu)}</TableRowCell>
             <TableRowCell>
               {Math.round(

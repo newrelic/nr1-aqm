@@ -1,5 +1,5 @@
 import { NerdGraphQuery } from 'nr1';
-import { EXCLUDED_ENTITY_TYPES } from './constants';
+import { EXCLUDED_ENTITY_TYPES, RECOMMENDATIONS } from './constants';
 
 export const chunkData = (d, size) => {
   return new Promise((resolve) => {
@@ -323,7 +323,7 @@ export const getTooltip = (context) => {
 };
 
 export const getTopCcuConditions = async (timeClause, account) => {
-  const ccuQ = `FROM NrComputeUsage SELECT sum(usage) as 'ccu' where productLine = 'Compute' and dimension_productCapability = 'Alert Conditions' facet dimension_conditionId ${timeClause} LIMIT 100`;
+  const ccuQ = `FROM NrComputeUsage SELECT sum(usage) as 'ccu', latest(dimension_conditionName) as 'name', latest(dimension_query) as 'nrql', latest(dimension_slidingWindows) as 'sliding_window' where productLine = 'Compute' and dimension_productCapability = 'Alert Conditions' and metric = 'CCU' and dimension_conditionType is not null ${timeClause} facet dimension_conditionId LIMIT 100`;
 
   const gql = `
   {
@@ -337,8 +337,41 @@ export const getTopCcuConditions = async (timeClause, account) => {
   });
 
   const result = data?.data?.actor?.ccuCount.results;
-  return result;
+  const optimizedResult = _analyzeConditionsForOptimization(result);
+  return optimizedResult;
 };
+
+const _analyzeConditionsForOptimization = (conditions) => {
+  conditions.forEach((c) => {
+    let recommendations = [];
+    const lowerNrql = c.nrql ? c.nrql.toLowerCase() : null;
+    if (lowerNrql) {
+      if (!_hasTopLevelWhereClause(lowerNrql)) {
+        recommendations.push(`${RECOMMENDATIONS.nrql}`);
+      }
+    }
+    if (c.sliding_window) {
+      recommendations.push(`${RECOMMENDATIONS.slideWindow}`);
+    }
+    c.recommendations = recommendations;
+    c.recommendationCount = recommendations.length;
+  });
+
+  return conditions;
+};
+
+function _hasTopLevelWhereClause(qLower) {
+  const innerRegex = /\([^()]*\)/g;
+  const whereRegex = /\bwhere\b/;
+
+  let processedQuery = qLower;
+
+  while (innerRegex.test(processedQuery)) {
+    processedQuery = processedQuery.replace(innerRegex, '');
+  }
+
+  return whereRegex.test(processedQuery);
+}
 
 export const getAlertCounts = async (timeClause, account) => {
   const notificationsQ = `FROM NrAiNotification SELECT count(*) ${timeClause}`;
