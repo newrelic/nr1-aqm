@@ -12,6 +12,7 @@
         "uuid": "3cc7c07c-77a7-4049-9ec6-533f349d2f22"
     },
     "dependencies": {
+        "@newrelic/nr-labs-components": "^2.0.2",
         "async": "^3.2.5",
         "json-to-csv-export": "^3.1.0",
         "prop-types": "15.7.2",

@@ -7,13 +7,13 @@ import ConditionDrilldown from '../drilldown/condition-drilldown';
 import Entities from '../drilldown/entities';
 import CcuOptimization from '../drilldown/ccu';
 
-const Drilldown = ({ account }) => {
+const Drilldown = ({ account, filters, activeIndex, onTabChange }) => {
   const panes = [
     {
       menuItem: 'Alerts',
       render: () => (
         <Tab.Pane>
-          <Incidents selectedAccount={account} />
+          <Incidents selectedAccount={account} filters={filters} />
         </Tab.Pane>
       ),
     },
@@ -29,7 +29,7 @@ const Drilldown = ({ account }) => {
       menuItem: 'Entity Coverage',
       render: () => (
         <Tab.Pane>
-          <Entities selectedAccount={account} />
+          <Entities selectedAccount={account} filters={filters} />
         </Tab.Pane>
       ),
     },
@@ -51,11 +51,16 @@ const Drilldown = ({ account }) => {
     },
   ];
 
-  return <Tab panes={panes} />;
+  return (
+    <Tab panes={panes} activeIndex={activeIndex} onTabChange={onTabChange} />
+  );
 };
 
 Drilldown.propTypes = {
   account: PropTypes.object,
+  filters: PropTypes.array,
+  activeIndex: PropTypes.number.isRequired,
+  onTabChange: PropTypes.func.isRequired,
 };
 
 export default Drilldown;

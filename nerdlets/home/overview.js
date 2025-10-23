@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import {
   AccountsQuery,
+  Button,
   PlatformStateContext,
   Spinner,
   Table,
@@ -9,12 +10,22 @@ import {
   TableRow,
   TableRowCell,
   TextField,
+  Tooltip,
 } from 'nr1';
-import { Modal } from 'semantic-ui-react';
-import { getAlertCounts } from '../shared/utils';
+import { Icon, Modal } from 'semantic-ui-react';
+import { getAlertCounts, getTooltip } from '../shared/utils';
 import { MAX_CONCURRENCY } from '../shared/constants';
 import async from 'async';
 import Drilldown from './drilldown';
+import Filter from './filter';
+
+const TABS = {
+  ALERTS: 0,
+  NOTIFICATIONS: 1,
+  ENTITY_COVERAGE: 2,
+  CONDITION_HISTORY: 3,
+  CCU_OPTIMIZATION: 4,
+};
 
 const OverviewPage = () => {
   const [fetchingData, setFetchingData] = useState(true);
@@ -26,6 +37,9 @@ const OverviewPage = () => {
   );
   const [openDrilldown, setOpenDrilldown] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [currentFilterSelections, setCurrentFilterSelections] = useState([]);
+  const [appliedFilterSelections, setAppliedFilterSelections] = useState([]);
+  const [currentTab, setCurrentTab] = useState(TABS.ALERTS);
 
   const { timeRange } = useContext(PlatformStateContext);
 
@@ -80,9 +94,35 @@ const OverviewPage = () => {
     }
   };
 
+  const handleTabChange = (event, data) => {
+    setCurrentTab(data.activeIndex);
+  };
+
+  const isFilterDisabled = useMemo(() => {
+    return (
+      currentTab === TABS.NOTIFICATIONS ||
+      currentTab === TABS.CONDITION_HISTORY ||
+      currentTab === TABS.CCU_OPTIMIZATION
+    );
+  }, [currentTab]);
+
   const onClose = () => {
     setOpenDrilldown(false);
     setSelectedAccount(null);
+    setCurrentFilterSelections([]);
+    setAppliedFilterSelections([]);
+    setCurrentTab(TABS.ALERTS);
+  };
+
+  const filtersHaveChanged = useMemo(() => {
+    return (
+      JSON.stringify(currentFilterSelections) !==
+      JSON.stringify(appliedFilterSelections)
+    );
+  }, [currentFilterSelections, appliedFilterSelections]);
+
+  const handleApplyFilters = () => {
+    setAppliedFilterSelections(currentFilterSelections);
   };
 
   const _onClickHeader = (nextCol, { nextSortingType }) => {
@@ -123,10 +163,39 @@ const OverviewPage = () => {
             className="modal"
           >
             <Modal.Header>
-              Drilldown - {selectedAccount.accountName}
+              <div className="drilldown-header">
+                <h2>Drilldown - {selectedAccount.accountName}</h2>
+                <Filter
+                  account={selectedAccount.accountId}
+                  selections={currentFilterSelections}
+                  setSelections={setCurrentFilterSelections}
+                  isDisabled={isFilterDisabled}
+                />
+                <div className="filter-button">
+                  <Button
+                    onClick={handleApplyFilters}
+                    disabled={!filtersHaveChanged || isFilterDisabled}
+                    variant={Button.VARIANT.PRIMARY}
+                    sizeType={Button.SIZE_TYPE.SMALL}
+                  >
+                    Apply Filter
+                  </Button>
+                  <Tooltip
+                    text={getTooltip('filter')}
+                    placementType={Tooltip.PLACEMENT_TYPE.RIGHT}
+                  >
+                    <Icon name="help circle" />
+                  </Tooltip>
+                </div>
+              </div>
             </Modal.Header>
             <Modal.Content scrolling>
-              <Drilldown account={selectedAccount} />
+              <Drilldown
+                account={selectedAccount}
+                filters={appliedFilterSelections}
+                activeIndex={currentTab}
+                onTabChange={handleTabChange}
+              />
             </Modal.Content>
           </Modal>
         ) : (

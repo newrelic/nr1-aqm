@@ -7,8 +7,6 @@ const ExportButton = ({ data, type, filename, displayText }) => {
   let headers;
   let formattedData = [];
 
-  console.log('export-data', data);
-
   switch (type) {
     case 'short_incidents':
       headers = [

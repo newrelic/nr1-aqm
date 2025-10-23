@@ -16,6 +16,94 @@ export const pluckTagValue = (tags, keyToPluck) => {
   return result ? result.values[0] : null;
 };
 
+export const getFilterKeys = async (accountId) => {
+  const keysetQ = `FROM NrAiIncident SELECT keyset() since 2 weeks ago`;
+
+  const gql = `
+  {
+    actor {
+      filterKeys: nrql(accounts: [${accountId}], query: "${keysetQ}", timeout: 90) {results}
+    }
+  }`;
+
+  let data = await NerdGraphQuery.query({
+    query: gql,
+  });
+
+  const result = data?.data?.actor?.filterKeys.results;
+  const tags = result.filter((r) => r.key.includes('tags.'));
+  const formattedTags = tags.map((t) => {
+    t.option = t.key;
+    t.values = [];
+    delete t.key;
+    return t;
+  });
+
+  return formattedTags;
+};
+
+export const getFilterValues = async (key, accountId) => {
+  const valuesQ = `FROM NrAiIncident SELECT uniques(${key}) as 'values' since 2 weeks ago`;
+
+  const gql = `
+  {
+    actor {
+      filterValues: nrql(accounts: [${accountId}], query: "${valuesQ}", timeout: 90) {results}
+    }
+  }`;
+
+  let data = await NerdGraphQuery.query({
+    query: gql,
+  });
+
+  const keyValues = data?.data?.actor?.filterValues?.results[0]?.values;
+  const formattedValues = keyValues.map((v) => ({ value: v }));
+
+  return formattedValues;
+};
+
+export const filtersArrayToNrql = (filters = []) =>
+  filters
+    .map((filter, i) => {
+      const lastIndex = filters.length - 1;
+      const conjunction =
+        i === lastIndex ? '' : filter.conjunction?.value || '';
+      if (!conjunction && i < lastIndex) return '';
+      const key = filter.key?.value;
+      if (!key) return '';
+      const {
+        value: operator,
+        multiValue,
+        noValueNeeded,
+        partialMatches,
+      } = filter.operator || {};
+      if (!operator) return '';
+      let valueStr = '';
+      if (multiValue && Array.isArray(filter.values)) {
+        const valuesArr = filter.values
+          ?.map(({ value } = {}) => (value?.trim?.() ? `'${value}'` : ''))
+          .filter(Boolean);
+        valueStr = valuesArr.length ? `(${valuesArr.join(', ')})` : '';
+      } else if (filter?.values?.value?.trim?.()) {
+        if (partialMatches) {
+          valueStr = `'%${filter.values.value}%'`;
+        } else if (operator === 'STARTS WITH') {
+          valueStr = `'${filter.values.value}%'`;
+        } else if (operator === 'ENDS WITH') {
+          valueStr = `'%${filter.values.value}'`;
+        } else {
+          valueStr = `'${filter.values.value}'`;
+        }
+      }
+      if (!valueStr && !noValueNeeded) return '';
+      return `${key} ${
+        operator === 'STARTS WITH' || operator === 'ENDS WITH'
+          ? 'LIKE'
+          : operator
+      } ${valueStr} ${conjunction}`;
+    })
+    .join(' ');
+
 export const getConditionTimeline = async (
   account,
   conditionId,
@@ -47,17 +135,18 @@ export const getConditionTimeline = async (
   return all;
 };
 
-export const getEntities = async (account, cursor) => {
+export const getEntities = async (account, filterClause, cursor) => {
   //TODO: add relatedEntities call once entity-condition relationships exist (to fetch all entities + alert coverage -- # of conditions targeting entities + what specific conditions)
   let gql = ``;
 
   const entityFilter = EXCLUDED_ENTITY_TYPES.map((e) => `'${e}'`).join(',');
+  const filterString = filterClause !== '' ? `and (${filterClause})` : '';
 
   if (cursor == null) {
     gql = `
     {
       actor {
-        entitySearch(query: "accountId = ${account.accountId} and reporting is true and type not in (${entityFilter})") {
+        entitySearch(query: "accountId = ${account.accountId} and reporting is true and type not in (${entityFilter}) ${filterString}") {
           results {
             entities {
               type
@@ -77,7 +166,7 @@ export const getEntities = async (account, cursor) => {
     gql = `
     {
       actor {
-        entitySearch(query: "accountId = ${account.accountId} and reporting is true and type not in (${entityFilter})") {
+        entitySearch(query: "accountId = ${account.accountId} and reporting is true and type not in (${entityFilter}) ${filterString}") {
           results(cursor: "${cursor}") {
             entities {
               type
@@ -111,7 +200,7 @@ export const getEntities = async (account, cursor) => {
   if (nextCursor == null) {
     return result;
   } else {
-    const nextResult = await getEntities(account, nextCursor);
+    const nextResult = await getEntities(account, filterClause, nextCursor);
     return result.concat(nextResult);
   }
 };
@@ -318,6 +407,9 @@ export const getTooltip = (context) => {
       text =
         'The bar below represents the percentage of entities with no alert conditions attached.';
       break;
+    case 'filter':
+      text =
+        'Select the + button to apply tag-based filtering to the Alerts or Entity Coverage tabs. Filters are persisted until drilldown is closed.';
   }
   return text;
 };
@@ -760,11 +852,19 @@ export const getIssues = async (account, cursor, timeWindow) => {
   }
 };
 
-export const getIncidents = async (account, timeClause) => {
-  const underFiveSummaryQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds <= 300) as 'percentUnder5' WHERE event = 'close' ${timeClause}`;
-  const underFiveDrilldownQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds <= 300) as 'percentUnder5' WHERE event = 'close' facet policyName, conditionName LIMIT 100 ${timeClause}`;
-  const overDaySummaryQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds >= 86400) as 'percentOverADay' WHERE event = 'close' ${timeClause}`;
-  const overDayDrilldownQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds >= 86400) as 'percentOverADay' WHERE event = 'close' facet policyName, conditionName LIMIT 100 ${timeClause}`;
+export const getIncidents = async (account, filterClause, timeClause) => {
+  const underFiveSummaryQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds <= 300) as 'percentUnder5' WHERE ${
+    filterClause !== '' ? `${filterClause} and` : ''
+  } event = 'close' ${timeClause}`;
+  const underFiveDrilldownQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds <= 300) as 'percentUnder5' WHERE ${
+    filterClause !== '' ? `${filterClause} and` : ''
+  } event = 'close' facet policyName, conditionName LIMIT 100 ${timeClause}`;
+  const overDaySummaryQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds >= 86400) as 'percentOverADay' WHERE ${
+    filterClause !== '' ? `${filterClause} and` : ''
+  } event = 'close' ${timeClause}`;
+  const overDayDrilldownQ = `FROM NrAiIncident SELECT percentage(count(*),WHERE durationSeconds >= 86400) as 'percentOverADay' WHERE ${
+    filterClause !== '' ? `${filterClause} and` : ''
+  } event = 'close' facet policyName, conditionName LIMIT 100 ${timeClause}`;
 
   const gql = `
   {
