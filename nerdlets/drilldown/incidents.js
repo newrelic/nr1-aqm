@@ -1,6 +1,11 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { getIncidents, getCardColor, getTooltip } from '../shared/utils';
+import {
+  getIncidents,
+  getCardColor,
+  getTooltip,
+  filtersArrayToNrql,
+} from '../shared/utils';
 import ExportButton from '../shared/export';
 import { Card, Icon, Statistic } from 'semantic-ui-react';
 import {
@@ -16,14 +21,28 @@ import {
   Tooltip,
 } from 'nr1';
 
-const openQWindow = (type, policy, condition, timeRange, selectedAccount) => {
+const openQWindow = (
+  type,
+  policy,
+  condition,
+  timeRange,
+  filters,
+  selectedAccount
+) => {
   const timeClause = `SINCE ${timeRange.duration / 60000} minutes ago`;
+  const filterClause =
+    filters && filters !== '' ? filtersArrayToNrql(filters) : '';
+
   let q = ``;
 
   if (type == 'short') {
-    q = `FROM NrAiIncident SELECT count(*) where event = 'close' and durationSeconds <= 300 and policyName = '${policy}' and conditionName = '${condition}' ${timeClause} TIMESERIES MAX`;
+    q = `FROM NrAiIncident SELECT count(*) where ${
+      filterClause !== '' ? `${filterClause} and` : ''
+    } event = 'close' and durationSeconds <= 300 and policyName = '${policy}' and conditionName = '${condition}' ${timeClause} TIMESERIES MAX`;
   } else {
-    q = `FROM NrAiIncident SELECT count(*) where event = 'close' and durationSeconds >= 86400 and policyName = '${policy}' and conditionName = '${condition}' ${timeClause} TIMESERIES MAX`;
+    q = `FROM NrAiIncident SELECT count(*) where ${
+      filterClause !== '' ? `${filterClause} and` : ''
+    } event = 'close' and durationSeconds >= 86400 and policyName = '${policy}' and conditionName = '${condition}' ${timeClause} TIMESERIES MAX`;
   }
 
   const qBuilder = {
@@ -44,7 +63,7 @@ const openQWindow = (type, policy, condition, timeRange, selectedAccount) => {
   navigation.openStackedNerdlet(qBuilder);
 };
 
-const Incidents = ({ selectedAccount }) => {
+const Incidents = ({ selectedAccount, filters }) => {
   const { timeRange } = useContext(PlatformStateContext);
   const [incidents, setIncidents] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -54,15 +73,21 @@ const Incidents = ({ selectedAccount }) => {
   useEffect(() => {
     const fetchAndSetIncidents = async () => {
       setLoading(true);
+      const filterClause =
+        filters && filters !== '' ? filtersArrayToNrql(filters) : '';
       const timeClause = `SINCE ${timeRange.duration / 60000} minutes ago`;
-      const data = await getIncidents(selectedAccount, timeClause);
+      const data = await getIncidents(
+        selectedAccount,
+        filterClause,
+        timeClause
+      );
 
       setIncidents(data);
       setLoading(false);
     };
 
     fetchAndSetIncidents();
-  }, [selectedAccount, timeRange]);
+  }, [selectedAccount, timeRange, filters]);
 
   const renderShortIncidents = useMemo(() => {
     if (
@@ -112,6 +137,7 @@ const Incidents = ({ selectedAccount }) => {
                     item.facet[0],
                     item.facet[1],
                     timeRange,
+                    filters,
                     selectedAccount
                   )
                 }
@@ -182,6 +208,7 @@ const Incidents = ({ selectedAccount }) => {
                     item.facet[0],
                     item.facet[1],
                     timeRange,
+                    filters,
                     selectedAccount
                   )
                 }
@@ -290,6 +317,7 @@ const Incidents = ({ selectedAccount }) => {
 
 Incidents.propTypes = {
   selectedAccount: PropTypes.object,
+  filters: PropTypes.array,
 };
 
 export default Incidents;

@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { getCardColor, getEntities, getTooltip } from '../shared/utils';
+import {
+  filtersArrayToNrql,
+  getCardColor,
+  getEntities,
+  getTooltip,
+} from '../shared/utils';
 import ExportButton from '../shared/export';
 import { Progress } from 'semantic-ui-react';
 import {
@@ -13,7 +18,7 @@ import {
   Spinner,
 } from 'nr1';
 
-const Entities = ({ selectedAccount }) => {
+const Entities = ({ selectedAccount, filters }) => {
   const [loading, setLoading] = useState(true);
   const [entities, setEntities] = useState(null);
   const [searchText, setSearchText] = useState('');
@@ -21,7 +26,10 @@ const Entities = ({ selectedAccount }) => {
   useEffect(() => {
     const fetchAndSetEntities = async () => {
       setLoading(true);
-      const data = await getEntities(selectedAccount, null);
+      const filterClause =
+        filters && filters !== '' ? filtersArrayToNrql(filters) : '';
+
+      const data = await getEntities(selectedAccount, filterClause, null);
 
       if (data == null) {
         setLoading(false);
@@ -43,7 +51,7 @@ const Entities = ({ selectedAccount }) => {
     };
 
     fetchAndSetEntities();
-  }, [selectedAccount]);
+  }, [selectedAccount, filters]);
 
   if (loading) {
     return (
@@ -114,6 +122,7 @@ const Entities = ({ selectedAccount }) => {
 
 Entities.propTypes = {
   selectedAccount: PropTypes.object,
+  filters: PropTypes.array,
 };
 
 export default Entities;
