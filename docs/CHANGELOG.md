@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/newrelic/nr1-aqm/compare/v1.1.1...v1.1.2) (2025-10-23)
+
+
+### Bug Fixes
+
+* global tags filter for alerts/entity coverage tabs ([ba47db1](https://github.com/newrelic/nr1-aqm/commit/ba47db1edc290653c7e0f28b5690fc0b38d701ab))
+
 ## [1.1.1](https://github.com/newrelic/nr1-aqm/compare/v1.1.0...v1.1.1) (2025-09-18)
 
 
