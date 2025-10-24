@@ -415,7 +415,7 @@ export const getTooltip = (context) => {
 };
 
 export const getTopCcuConditions = async (timeClause, account) => {
-  const ccuQ = `FROM NrComputeUsage SELECT sum(usage) as 'ccu', latest(dimension_conditionName) as 'name', latest(dimension_query) as 'nrql', latest(dimension_slidingWindows) as 'sliding_window' where productLine = 'Compute' and dimension_productCapability = 'Alert Conditions' and metric = 'CCU' and dimension_conditionType is not null ${timeClause} facet dimension_conditionId LIMIT 100`;
+  const ccuQ = `FROM NrComputeUsage SELECT sum(usage) as 'ccu', latest(dimension_conditionName) as 'name', latest(dimension_query) as 'nrql', latest(dimension_slidingWindows) as 'sliding_window' where productLine = 'Compute' and dimension_productCapability = 'Alert Conditions' and metric = 'CoreCCU' and dimension_conditionType is not null ${timeClause} facet dimension_conditionId LIMIT 100`;
 
   const gql = `
   {
