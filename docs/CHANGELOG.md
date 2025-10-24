@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/newrelic/nr1-aqm/compare/v1.1.2...v1.1.3) (2025-10-24)
+
+
+### Bug Fixes
+
+* ccu query filter fix ([eea1e2a](https://github.com/newrelic/nr1-aqm/commit/eea1e2ab5aa578bb60f539ae6650ff4812590578))
+
 ## [1.1.2](https://github.com/newrelic/nr1-aqm/compare/v1.1.1...v1.1.2) (2025-10-23)
 
 
